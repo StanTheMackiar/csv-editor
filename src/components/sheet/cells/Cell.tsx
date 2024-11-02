@@ -1,3 +1,6 @@
+import ContentEditable, {
+  ContentEditableEvent,
+} from '@/components/core/input/ContentEditable';
 import { parseTextToHTML } from '@/helpers/change-cell.helper';
 import clsx from 'clsx';
 import {
@@ -8,7 +11,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import ContentEditable, { ContentEditableEvent } from 'react-contenteditable';
 import { useShallow } from 'zustand/react/shallow';
 import { useSheetStore } from '../../../stores/useSheetStore';
 import { ICell } from '../../../types/sheet/cell/cell.types';
