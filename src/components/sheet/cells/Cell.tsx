@@ -33,7 +33,6 @@ export const Cell: FC<CellProps> = (props) => {
       onDoubleClick={onDoubleClick}
       id={`${cell.id}-cell`}
       className={clsx(s['sheet-cell'])}
-      key={cell.id}
     >
       <div
         className={clsx(

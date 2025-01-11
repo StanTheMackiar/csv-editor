@@ -5,7 +5,7 @@ import { SheetEventsProvider } from '@/providers';
 export default function Home() {
   return (
     <SheetEventsProvider>
-      <main className="bg-gray-600">
+      <main>
         <Sheet />
       </main>
     </SheetEventsProvider>

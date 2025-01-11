@@ -3,8 +3,14 @@ import { FC } from 'react';
 import clsx from 'clsx';
 import { Cell } from './cells/Cell';
 
+import {
+  COLUMN_DEFAULT_WIDTH,
+  COLUMN_MIN_WIDTH,
+  ROW_DEFAULT_HEIGHT,
+} from '@/helpers/constants/sheet-config.helper';
 import s from './Sheet.module.css';
 import { useSheet } from './useSheet';
+import { useSheetRedimension } from './useSheetRedimension';
 
 export const Sheet: FC = () => {
   const {
@@ -21,60 +27,86 @@ export const Sheet: FC = () => {
     saveSheetFromCell,
   } = useSheet();
 
+  const { columnWidths, rowHeights, resizeColumnWidth, resizeRowHeight } =
+    useSheetRedimension();
+
   return (
-    <table
-      className={clsx(s.sheet, {
-        'select-auto': !!focusedCellInputRef?.current,
-      })}
-    >
-      <thead className={s['sheet-head']}>
-        <tr className={s['sheet-row']}>
-          <th className={s['sheet-header-cell']} onClick={onClickAll}></th>
-
-          {sheetLetters.map((col) => (
+    <div className={s['table-container']}>
+      <table
+        className={clsx(s.sheet, {
+          'select-auto': !!focusedCellInputRef?.current,
+        })}
+      >
+        <thead className={s['sheet-head']}>
+          <tr className={s['sheet-row']}>
             <th
-              onClick={() => onClickColumn(col)}
-              className={clsx({
-                [s['sheet-header-cell']]: true,
-                [s.selected]: getColIsSelected(col),
-              })}
-              key={col.name}
-            >
-              {col.name}
-            </th>
-          ))}
-        </tr>
-      </thead>
+              className={clsx(s['sheet-header-cell'])}
+              onClick={onClickAll}
+            ></th>
 
-      <tbody>
-        {sheet.map((row, i) => {
-          const specialRow = sheetNumbers[i];
-
-          return (
-            <tr className={s['sheet-row']} key={specialRow.value}>
-              <td
-                onClick={() => onClickRow(specialRow)}
+            {sheetLetters.map((col) => (
+              <th
+                onClick={() => onClickColumn(col)}
                 className={clsx({
                   [s['sheet-header-cell']]: true,
-                  [s.selected]: getRowIsSelected(specialRow),
+                  [s.selected]: getColIsSelected(col),
                 })}
+                style={{
+                  width: `${columnWidths[col.name] || COLUMN_DEFAULT_WIDTH}px`,
+                  minWidth: `${COLUMN_MIN_WIDTH}px`,
+                  height: `${ROW_DEFAULT_HEIGHT}px`,
+                }}
+                key={col.name}
               >
-                {specialRow.name}
-              </td>
+                {col.name}
 
-              {row.map((cell) => {
-                return (
-                  <Cell
-                    key={cell.id}
-                    cell={cell}
-                    saveChanges={saveSheetFromCell}
+                <div
+                  className={s['column-resizer']}
+                  onMouseDown={(e) => resizeColumnWidth(col.name, e)}
+                />
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {sheet.map((row, i) => {
+            const rowNumber = sheetNumbers[i];
+
+            return (
+              <tr className={s['sheet-row']} key={rowNumber.value}>
+                <td
+                  onClick={() => onClickRow(rowNumber)}
+                  className={clsx({
+                    [s['sheet-header-cell']]: true,
+                    [s.selected]: getRowIsSelected(rowNumber),
+                  })}
+                  style={{
+                    height: `${rowHeights[rowNumber.name] || ROW_DEFAULT_HEIGHT}px`,
+                  }}
+                >
+                  {rowNumber.name}
+
+                  <div
+                    className={s['row-resizer']}
+                    onMouseDown={(e) => resizeRowHeight(rowNumber.name, e)}
                   />
-                );
-              })}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+                </td>
+
+                {row.map((cell) => {
+                  return (
+                    <Cell
+                      key={cell.id}
+                      cell={cell}
+                      saveChanges={saveSheetFromCell}
+                    />
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 };

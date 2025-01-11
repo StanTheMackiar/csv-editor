@@ -1,3 +1,7 @@
+import {
+  INITIAL_COLS_QTY,
+  INITIAL_ROWS_QTY,
+} from '@/helpers/constants/sheet-config.helper';
 import { RefObject } from 'react';
 import { create } from 'zustand';
 import KeyEnum from '../enum/key.enum';
@@ -13,9 +17,6 @@ import {
   FunctionModeCell,
   ICell,
 } from '../types/sheet/cell/cell.types';
-
-const initialRowsQty = 16;
-const initialColsQty = 8;
 
 export type Direction = 'left' | 'up' | 'down' | 'right';
 interface State {
@@ -65,20 +66,20 @@ interface Actions {
 }
 
 export const defaultState: State = {
-  colsQty: initialColsQty,
+  colsQty: INITIAL_COLS_QTY,
+  rowsQty: INITIAL_ROWS_QTY,
   focusedCellInput: null,
+  functionMode: false,
+  functionModeCells: [],
   isSelecting: false,
+  isSelectingFunctionMode: false,
+  latestSelectedCell: null,
   pressedKeys: [],
   remarkedCell: null,
-  isSelectingFunctionMode: false,
   remarkedCellInputRef: null,
-  functionModeCells: [],
-  functionMode: false,
-  rowsQty: initialRowsQty,
   selectedCells: [],
   selectedCellsState: [],
-  latestSelectedCell: null,
-  sheet: getSheet(initialRowsQty, initialColsQty),
+  sheet: getSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
 };
 
 export const useSheetStore = create<State & Actions>((set) => ({

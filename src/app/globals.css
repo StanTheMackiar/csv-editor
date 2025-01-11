@@ -60,11 +60,3 @@ td {
   border: 1px solid #ddd; /* Define un borde para las celdas */
   text-align: left;
 }
-
-main {
-  width: 100%;
-  height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}

@@ -1,31 +1,53 @@
-.sheet {
+.table-container {
   width: 100%;
+  background-color: rgb(234, 234, 234);
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+  max-height: 100vh;
+}
+
+.sheet {
+  table-layout: fixed;
+  min-width: min-content;
   background-color: white;
-  overflow: auto;
+  width: max-content;
   user-select: none;
 }
 
 .sheet-head {
-  border-bottom: 1px solid black;
+  position: sticky;
+  z-index: 5;
+  top: 0;
 }
 
 .sheet-row {
   width: 100%;
+  position: relative;
   margin-block: 20px;
 }
 
-.sheet-header-cell {
-  height: 36px;
-  width: auto;
-  padding-inline: 12px;
-  background-color: rgb(236, 236, 236);
-  font-weight: bold;
+.sheet-head .sheet-row th:first-child {
+  z-index: 5;
+  background-color: rgb(205, 204, 204);
+  position: sticky;
+  left: 0;
+  top: 0;
 }
 
 .sheet-row td:first-child {
-  width: 40px; /* o el ancho que prefieras */
-  min-width: 40px;
-  max-width: 40px;
+  width: 40px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.sheet-header-cell {
+  font-weight: bold;
+  background-color: rgb(236, 236, 236);
+  padding-inline: 12px;
+  position: relative;
+  user-select: none;
 }
 
 .sheet-header-cell.selected {
@@ -34,11 +56,83 @@
   outline: 2px solid rgb(149, 163, 194);
 }
 
+.row-resizer {
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  cursor: row-resize;
+  z-index: 1;
+}
+
+.row-resizer::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #e0e0e0;
+  transition: background 0.2s;
+}
+
+/* Efecto hover */
+.row-resizer:hover::after {
+  height: 4px;
+  background: #999;
+}
+
+/* Mientras se está redimensionando */
+.resizing-row .row-resizer::after {
+  background: #b1b1b1;
+}
+
+.resizing-row {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.column-resizer {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.column-resizer::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: #e0e0e0;
+  transition: background 0.2s;
+}
+
+/* Efecto hover */
+.column-resizer:hover::after {
+  width: 4px;
+  background: #999;
+}
+
+/* Mientras se está redimensionando */
+.resizing-column .column-resizer::after {
+  background: #b1b1b1;
+}
+
+.resizing-column {
+  cursor: col-resize;
+  user-select: none;
+}
+
 .sheet-cell {
   position: relative;
-  height: auto;
-  background-color: white;
-  width: fit-content; /* O el ancho que prefieras */
+  height: max-content;
 }
 
 .sheet-input {
