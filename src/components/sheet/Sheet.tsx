@@ -24,7 +24,6 @@ export const Sheet: FC = () => {
     onClickAll,
     onClickColumn,
     onClickRow,
-    saveSheetFromCell,
   } = useSheet();
 
   const { columnWidths, rowHeights, resizeColumnWidth, resizeRowHeight } =
@@ -94,13 +93,7 @@ export const Sheet: FC = () => {
                 </td>
 
                 {row.map((cell) => {
-                  return (
-                    <Cell
-                      key={cell.id}
-                      cell={cell}
-                      saveChanges={saveSheetFromCell}
-                    />
-                  );
+                  return <Cell key={cell.id} cell={cell} />;
                 })}
               </tr>
             );

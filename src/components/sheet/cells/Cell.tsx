@@ -7,7 +7,6 @@ import { useCell } from './useCell';
 
 export interface CellProps {
   cell: ICell;
-  saveChanges: (cell: ICell, value: string) => void;
 }
 
 export const Cell: FC<CellProps> = (props) => {

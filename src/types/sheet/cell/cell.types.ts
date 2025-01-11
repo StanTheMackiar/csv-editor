@@ -6,8 +6,6 @@ export interface ICell {
   positionX: number;
   value: string;
   computedValue: string;
-  stateValue?: string;
-  setState?: (value: string) => void;
 }
 
 export type ICellSpecial = {
@@ -52,6 +50,6 @@ export type CellCoords = {
 };
 
 export type FunctionModeCell = {
-  id: string;
+  coords: CellCoords;
   color: string;
 };

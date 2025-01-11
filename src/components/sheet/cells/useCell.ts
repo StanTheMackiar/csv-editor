@@ -1,54 +1,67 @@
 import { ContentEditableEvent } from '@/components/core/input/ContentEditable';
 import { parseTextToHTML } from '@/helpers/change-cell.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
-import { FocusEventHandler, useEffect, useMemo, useRef, useState } from 'react';
+import { FocusEventHandler, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { CellProps } from './Cell';
 
-export const useCell = ({ cell, saveChanges }: CellProps) => {
+export const useCell = ({ cell }: CellProps) => {
   const [
+    updateCells,
     selectedCells,
     remarkedCell,
+    setFocusedCell,
     setFocusedCellRef,
     setRemarkedCellRef,
     functionMode,
-    updateCells,
     setFunctionMode,
-    functionModeCell,
+    functionModeCells,
+    focusedCell,
+    recomputeSheet,
   ] = useSheetStore(
     useShallow((state) => {
-      const cellInFunction = state.functionModeCells.find(
-        (funcCell) => funcCell.id === cell.id
-      );
-
       return [
+        state.updateCells,
         state.selectedCells,
         state.remarkedCell,
+        state.setFocusedCell,
         state.setFocusedCellInputRef,
         state.setRemarkedCellInputRef,
         state.functionMode,
-        state.updateCells,
         state.setFunctionMode,
-        cellInFunction,
+        state.functionModeCells,
+        state.focusedCell,
+        state.recomputeSheet,
       ];
     })
   );
 
-  const [value, setValue] = useState(cell.value);
-  const [inputFocused, setInputFocused] = useState(false);
+  const functionModeCell = functionModeCells.find(
+    (funcCell) =>
+      funcCell.coords.x === cell.positionX &&
+      funcCell.coords.y === cell.positionY
+  );
+
+  const inputFocused =
+    focusedCell?.x === cell.positionX && focusedCell?.y === cell.positionY;
 
   const inputRef = useRef<HTMLDivElement>(null);
 
   const isFunctionMode = functionMode && inputFocused;
 
   const isSelected = useMemo(
-    () => selectedCells.some((selectedCell) => selectedCell.id === cell.id),
+    () =>
+      selectedCells.some(
+        (selectedCell) =>
+          selectedCell.x === cell.positionX && selectedCell.y === cell.positionY
+      ),
     [selectedCells, cell]
   );
 
   const { isRemarked, isShadowed } = useMemo(() => {
     const isShadowed = selectedCells.length > 1 && isSelected;
-    const isRemarked = remarkedCell?.id === cell.id;
+    const isRemarked =
+      remarkedCell?.x === cell.positionX && remarkedCell?.y === cell.positionY;
 
     return {
       isShadowed,
@@ -57,18 +70,11 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
   }, [remarkedCell, isSelected, selectedCells, cell]);
 
   useEffect(() => {
-    const enableFuncMode = value.startsWith('=') && inputFocused;
+    if (!inputFocused) return;
+    const enableFuncMode = cell.value.startsWith('=');
 
     setFunctionMode(enableFuncMode);
-
-    return () => {
-      setFunctionMode(false);
-    };
-  }, [inputFocused, setFunctionMode, value]);
-
-  useEffect(() => {
-    updateCells([{ ...cell, stateValue: value, setState: setValue }]);
-  }, [cell, setValue, updateCells, value]);
+  }, [cell.value, inputFocused, setFunctionMode]);
 
   useEffect(() => {
     if (isRemarked) setRemarkedCellRef(inputRef);
@@ -78,10 +84,9 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
     inputRef.current?.blur();
 
     setFocusedCellRef(null);
-    setInputFocused(false);
+    setFocusedCell(null);
     setFunctionMode(false);
-
-    saveChanges(cell, inputRef.current?.textContent ?? '');
+    recomputeSheet();
   };
 
   const onDoubleClick = () => {
@@ -89,23 +94,36 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
   };
 
   const onFocus = () => {
+    setFocusedCell({
+      x: cell.positionX,
+      y: cell.positionY,
+    });
+
     setFocusedCellRef(inputRef);
-    setInputFocused(true);
   };
 
   const onChange = (e: ContentEditableEvent) => {
     const text = (e.currentTarget.textContent as string) ?? '';
+    const enableFuncMode = text.startsWith('=');
 
-    setValue(text);
+    setFunctionMode(enableFuncMode);
+
+    updateCells([
+      {
+        coords: {
+          x: cell.positionX,
+          y: cell.positionY,
+        },
+        newValue: text,
+      },
+    ]);
   };
 
-  const html = parseTextToHTML(String(value));
+  const html = parseTextToHTML(String(cell.value));
 
   const onClick = () => {
     // eslint-disable-next-line no-console
-    console.log({ cell });
-    // eslint-disable-next-line no-console
-    console.log({ value });
+    // console.log(cell);
   };
 
   return {

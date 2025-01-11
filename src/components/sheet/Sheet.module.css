@@ -158,6 +158,7 @@
   overflow: visible;
   white-space: normal;
   height: fit-content;
+  width: fit-content;
   box-shadow: 0 0 0 2px rgb(100, 151, 239);
 }
 

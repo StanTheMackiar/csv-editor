@@ -7,7 +7,6 @@ import {
   isSpecialKey,
 } from '../../../helpers/keys/keys.helpers';
 import { Direction, useSheetStore } from '../../../stores/useSheetStore';
-import { ICell } from '../../../types/sheet/cell/cell.types';
 
 export const usePressedKeys = () => {
   const [
@@ -16,7 +15,7 @@ export const usePressedKeys = () => {
     moveLatestSelectedCell,
     moveRemarkedCell,
     pressedKeys,
-    remarkedCell,
+    remarkedCellCoords,
     remarkedCellInputRef,
     removePressedKey,
     setPressedKeys,
@@ -25,7 +24,7 @@ export const usePressedKeys = () => {
   ] = useSheetStore(
     useShallow((state) => [
       state.addPressedKey,
-      state.focusedCellInput,
+      state.focusedCellInputRef,
       state.moveLatestSelectedCell,
       state.moveRemarkedCell,
       state.pressedKeys,
@@ -70,11 +69,12 @@ export const usePressedKeys = () => {
 
   const onPressBackspace = useCallback(() => {
     if (!focusedElement) {
-      const selectedCellsCleaned: ICell[] = selectedCells.map(
-        (selectedCell) => ({ ...selectedCell, value: '', computedValue: '' })
+      updateCells(
+        selectedCells.map((coords) => ({
+          coords,
+          newValue: '',
+        }))
       );
-
-      updateCells(selectedCellsCleaned);
     }
   }, [focusedElement, selectedCells, updateCells]);
 
@@ -140,25 +140,15 @@ export const usePressedKeys = () => {
       !focusedElement &&
       typeof remarkedElement?.innerText !== 'undefined';
 
-    if (updateRemarkedCell && remarkedCell) {
-      updateCells([
-        {
-          positionY: remarkedCell.positionY,
-          positionX: remarkedCell.positionX,
-          value: keyPressed,
-          computedValue: keyPressed,
-        },
-      ]);
-
-      setTimeout(() => remarkedElement.focus(), 50);
+    if (updateRemarkedCell && remarkedCellCoords) {
+      remarkedElement.focus();
     }
   }, [
     focusedElement,
     getActionByKeyPressed,
     pressedKeys,
-    remarkedCell,
+    remarkedCellCoords,
     remarkedElement,
-    updateCells,
   ]);
 
   const handleKeyDown = useCallback(
