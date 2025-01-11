@@ -7,7 +7,6 @@ import { useCell } from './useCell';
 
 export interface CellProps {
   cell: ICell;
-  saveChanges: (cell: ICell, value: string) => void;
 }
 
 export const Cell: FC<CellProps> = (props) => {
@@ -24,12 +23,14 @@ export const Cell: FC<CellProps> = (props) => {
 
     handleBlur,
     onChange,
+    onClick,
     onDoubleClick,
     onFocus,
   } = useCell(props);
 
   return (
     <td
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       id={`${cell.id}-cell`}
       className={clsx(s['sheet-cell'])}

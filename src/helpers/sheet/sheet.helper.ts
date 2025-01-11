@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RefObject } from 'react';
 import { Direction } from '../../stores/useSheetStore';
-import { ICell, ICellSpecial, ISheet } from '../../types/sheet/cell/cell.types';
+import {
+  CellCoords,
+  ICell,
+  ICellSpecial,
+  ISheet,
+} from '../../types/sheet/cell/cell.types';
 import { alphabet } from '../constants/alphabet';
 
 export const getCellHeart = (positionX: number, positionY: number) => {
@@ -62,9 +67,16 @@ export const adjustSheetSize = (
   return newSheet;
 };
 
-export const getCellFromMouseEvent = (e: any, sheet: ISheet): ICell | null => {
-  const [cellId] = e?.target?.id?.split('-');
+export const getCellFromMouseEvent = (sheet: ISheet, e: any): ICell | null => {
+  const target = e.target as HTMLInputElement;
+  const [cellId] = target.id.split('-');
 
+  const cell = getCellFromId(sheet, cellId);
+
+  return cell;
+};
+
+export const getCellFromId = (sheet: ISheet, cellId?: string): ICell | null => {
   if (!cellId) return null;
 
   const cell = sheet.flat().find((cell) => cell.id === cellId) ?? null;
@@ -87,12 +99,26 @@ export const getCellFromInputRef = (
   return cell;
 };
 
-export const extractCells = (start: string, end: string, sheet: ISheet) => {
-  const startCol = start.match(/[A-Z]+/g)?.[0] ?? '';
-  const startRow = start.match(/\d+/g)?.[0] ?? '';
+export const extractCoordsFromId = (cellId: string): CellCoords => {
+  const col = cellId.match(/[A-Z]+/g)?.[0] ?? '';
+  const row = cellId.match(/\d+/g)?.[0] ?? '';
 
-  const endCol = end.match(/[A-Z]+/g)?.[0] ?? '';
-  const endRow = end.match(/\d+/g)?.[0] ?? '';
+  const x = col.charCodeAt(0) - 'A'.charCodeAt(0);
+  const y = parseInt(row, 10) - 1;
+
+  return { x, y };
+};
+
+export const extractCells = (
+  startId: string,
+  endId: string,
+  sheet: ISheet
+): CellCoords[] => {
+  const startCol = startId.match(/[A-Z]+/g)?.[0] ?? '';
+  const startRow = startId.match(/\d+/g)?.[0] ?? '';
+
+  const endCol = endId.match(/[A-Z]+/g)?.[0] ?? '';
+  const endRow = endId.match(/\d+/g)?.[0] ?? '';
 
   const startCellX = startCol.charCodeAt(0) - 'A'.charCodeAt(0);
   const startCellY = parseInt(startRow, 10) - 1;
@@ -106,12 +132,12 @@ export const extractCells = (start: string, end: string, sheet: ISheet) => {
   const endX = Math.max(startCellX, endCellX);
   const endY = Math.max(startCellY, endCellY);
 
-  const cells: ICell[] = [];
+  const cells: CellCoords[] = [];
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
       const cell = sheet[y]?.[x];
-      if (cell) cells.push(cell);
+      if (cell) cells.push({ x, y });
     }
   }
 
@@ -120,9 +146,11 @@ export const extractCells = (start: string, end: string, sheet: ISheet) => {
 
 export const getCellByDirection = (
   dir: Direction,
-  cell: ICell,
+  cellCoords: CellCoords,
   sheet: ISheet
-): ICell | undefined => {
+): CellCoords | undefined => {
+  const cell = sheet[cellCoords.y][cellCoords.x];
+
   const coordsMap: Record<Direction, { x: number; y: number }> = {
     up: {
       x: cell.positionX,
@@ -145,7 +173,8 @@ export const getCellByDirection = (
   const positionX = Math.max(coords.x, 0);
   const positionY = Math.max(coords.y, 0);
 
-  const newCell = sheet[positionY][positionX];
-
-  return newCell;
+  return {
+    x: positionX,
+    y: positionY,
+  };
 };

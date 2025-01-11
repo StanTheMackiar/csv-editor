@@ -1,14 +1,15 @@
 import { getColorFromSequence } from '@/helpers/color.helper';
-import { computeCell, parseExpression } from '@/helpers/sheet/cell/cell.helper';
+import { parseExpression } from '@/helpers/sheet/cell/cell.helper';
 import {
   extractCells,
+  extractCoordsFromId,
   getSheetLetters,
   getSheetNumbers,
 } from '@/helpers/sheet/sheet.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
 import {
+  CellCoords,
   FunctionModeCell,
-  ICell,
   ICellSpecial,
 } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -16,6 +17,7 @@ import { useShallow } from 'zustand/shallow';
 
 export const useSheet = () => {
   const [
+    focusedCell,
     colsQty,
     focusedCellInputRef,
     functionMode,
@@ -23,36 +25,33 @@ export const useSheet = () => {
     selectedCells,
     setSelectedCells,
     setFunctionModeCells,
-    setSheet,
     sheet,
-    recomputeSheet,
-    selectedCellsState,
   ] = useSheetStore(
     useShallow((state) => [
+      state.focusedCell,
       state.colsQty,
-      state.focusedCellInput,
+      state.focusedCellInputRef,
       state.functionMode,
       state.rowsQty,
       state.selectedCells,
       state.setSelectedCells,
       state.setFunctionModeCells,
-      state.setSheet,
       state.sheet,
-      state.recomputeSheet,
-      state.selectedCellsState,
     ])
   );
 
   useEffect(() => {
-    const remarkedValue = selectedCellsState[0]?.value;
+    const focusedValue = focusedCell
+      ? sheet[focusedCell?.y][focusedCell?.x].value
+      : undefined;
 
-    if (!remarkedValue || !functionMode) {
+    if (!focusedValue || !functionMode) {
       setFunctionModeCells([]);
 
       return;
     }
 
-    const { refsFound } = parseExpression(remarkedValue, sheet);
+    const { refsFound } = parseExpression(focusedValue, sheet);
 
     const functionModeCells: FunctionModeCell[] = [];
 
@@ -62,62 +61,54 @@ export const useSheet = () => {
       const isRange = !!endCell;
 
       if (isRange) {
-        const cells = extractCells(startCell, endCell, sheet);
+        const cellCoords = extractCells(startCell, endCell, sheet);
 
-        cells.forEach((cell) => {
+        cellCoords.forEach((coords) => {
           functionModeCells.push({
-            id: cell.id,
+            coords,
             color,
           });
         });
       } else {
+        const coords = extractCoordsFromId(startCell);
+
         functionModeCells.push({
-          id: startCell,
+          coords,
           color,
         });
       }
     });
 
     setFunctionModeCells(functionModeCells);
-  }, [functionMode, selectedCellsState, setFunctionModeCells, sheet]);
-
-  const saveSheetFromCell = (cell: ICell, newValue: string) => {
-    const currentSheet = sheet.slice();
-
-    currentSheet[cell.positionY][cell.positionX] = computeCell(
-      cell,
-      sheet,
-      newValue
-    );
-
-    setSheet({ sheet: currentSheet });
-
-    setTimeout(recomputeSheet, 50);
-  };
+  }, [focusedCell, functionMode, setFunctionModeCells, sheet]);
 
   const sheetLetters = useMemo(() => getSheetLetters(colsQty), [colsQty]);
   const sheetNumbers = useMemo(() => getSheetNumbers(rowsQty), [rowsQty]);
 
   const onClickColumn = (col: ICellSpecial) => {
-    const columnsFound: ICell[] = sheet
+    const columnsFound: CellCoords[] = sheet
       .flat()
       .filter((cell) => cell.positionX === col.value)
-      .map((cell) => cell);
+      .map((cell) => ({ x: cell.positionX, y: cell.positionY }));
 
     setSelectedCells(columnsFound);
   };
 
   const onClickRow = (row: ICellSpecial) => {
-    const rowsFound: ICell[] = sheet
+    const rowsFound: CellCoords[] = sheet
       .flat()
       .filter((cell) => cell.positionY === row.value)
-      .map((cell) => cell);
+      .map((cell) => ({ x: cell.positionX, y: cell.positionY }));
 
     setSelectedCells(rowsFound);
   };
 
   const onClickAll = () => {
-    setSelectedCells(sheet.flat());
+    setSelectedCells(
+      sheet.flatMap((row) =>
+        row.map((cell) => ({ x: cell.positionX, y: cell.positionY }))
+      )
+    );
   };
 
   const getColIsSelected = useCallback(
@@ -125,7 +116,7 @@ export const useSheet = () => {
       const selectedCellsArray = Array.from(selectedCells);
 
       const someColSelected = selectedCellsArray.some(
-        (selectedCell) => selectedCell.positionX === col.value
+        (selectedCell) => selectedCell.x === col.value
       );
 
       return someColSelected;
@@ -138,7 +129,7 @@ export const useSheet = () => {
       const selectedCellsArray = Array.from(selectedCells);
 
       const someRowSelected = selectedCellsArray.some(
-        (selectedCell) => selectedCell.positionY === row.value
+        (selectedCell) => selectedCell.y === row.value
       );
 
       return someRowSelected;
@@ -157,6 +148,5 @@ export const useSheet = () => {
     onClickAll,
     onClickColumn,
     onClickRow,
-    saveSheetFromCell,
   };
 };

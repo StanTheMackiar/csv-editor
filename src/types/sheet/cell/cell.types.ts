@@ -38,7 +38,9 @@ export type ParseExpressionReturn = {
 
 export type CellState = {
   value: string;
-  cellId: string;
+  x: number;
+  y: number;
+  id: string;
   setValue: (value: string) => void;
 };
 
@@ -48,6 +50,6 @@ export type CellCoords = {
 };
 
 export type FunctionModeCell = {
-  id: string;
+  coords: CellCoords;
   color: string;
 };

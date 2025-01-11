@@ -11,15 +11,21 @@ import {
   getCellFromMouseEvent,
 } from '../../../helpers/sheet/sheet.helper';
 import { useSheetStore } from '../../../stores/useSheetStore';
-import { CellRef, ICell } from '../../../types/sheet/cell/cell.types';
+import {
+  CellCoords,
+  CellRef,
+  ICell,
+} from '../../../types/sheet/cell/cell.types';
 
 export const useMouseEvents = () => {
   const [
+    focusedCell,
+    updateCells,
     focusedCellInput,
     addCellsToSelection,
     functionMode,
     isSelecting,
-    remarkedCell,
+    remarkedCellCoords,
     selectCells,
     selectedCells,
     setIsSelecting,
@@ -28,12 +34,13 @@ export const useMouseEvents = () => {
     setSelectedCells,
     sheet,
     unmarkSelectedCells,
-    selectedCellsState,
     isSelectingFunctionMode,
     setIsSelectingFunctionMode,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCellInput,
+      state.focusedCell,
+      state.updateCells,
+      state.focusedCellInputRef,
       state.addCellsToSelection,
       state.functionMode,
       state.isSelecting,
@@ -46,7 +53,6 @@ export const useMouseEvents = () => {
       state.setSelectedCells,
       state.sheet,
       state.unmarkSelectedCells,
-      state.selectedCellsState,
       state.isSelectingFunctionMode,
       state.setIsSelectingFunctionMode,
     ])
@@ -54,14 +60,14 @@ export const useMouseEvents = () => {
 
   const focusedCellInputRef = focusedCellInput?.current;
 
-  const [startSelectionCell, setStartSelectionCell] = useState<ICell | null>(
-    null
-  );
+  const [startSelectionCoords, setStartSelectionCoords] =
+    useState<CellCoords | null>(null);
   const [startCellInFunctionMode, setStartCellInFunctionMode] =
     useState<ICell | null>(null);
 
   const handleMouseDown = useCallback(
-    (e: MouseEvent) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e: any) => {
       const allowedButtons = [0, 2];
 
       if (e.button === 2) e.preventDefault();
@@ -70,28 +76,36 @@ export const useMouseEvents = () => {
         return;
       }
 
-      const cellClicked = getCellFromMouseEvent(e, sheet);
+      const targetCell = focusedCell
+        ? sheet[focusedCell?.y]?.[focusedCell?.x]
+        : undefined;
 
-      if (!cellClicked) {
+      const clickedCell = getCellFromMouseEvent(sheet, e);
+
+      if (!clickedCell) {
         if (focusedCellInputRef) return;
 
         setLatestSelectedCell(null);
         setRemarkedCell(null);
         unmarkSelectedCells();
         setIsSelecting(false);
-        setStartSelectionCell(cellClicked);
+        setStartSelectionCoords(clickedCell);
 
         return;
       }
 
       const isUniqueSelected = selectedCells.length === 1;
 
+      const remarkedCell = remarkedCellCoords
+        ? sheet[remarkedCellCoords?.y]?.[remarkedCellCoords?.x]
+        : undefined;
+
       const clickedRemarkedCell =
-        isUniqueSelected && remarkedCell?.id === cellClicked?.id;
+        isUniqueSelected && remarkedCell?.id === clickedCell?.id;
 
       const allowGetCellRef =
         functionMode &&
-        remarkedCell &&
+        remarkedCellCoords &&
         !clickedRemarkedCell &&
         !isSelectingFunctionMode;
 
@@ -100,38 +114,51 @@ export const useMouseEvents = () => {
 
         if (!isSelectingFunctionMode) {
           setIsSelectingFunctionMode(true);
-          setStartCellInFunctionMode(cellClicked);
+          setStartCellInFunctionMode(clickedCell);
         }
 
-        selectedCellsState.forEach((state) => {
-          if (state.cellId !== remarkedCell.id) return;
+        if (!targetCell || !focusedCellInputRef)
+          throw new Error('Cell not found');
 
-          const { refsFound } = parseExpression(state.value, sheet);
+        const { refsFound } = parseExpression(targetCell.value, sheet);
 
-          const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
-          if (!cursorPosition) return;
+        const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
+        if (!cursorPosition) return;
 
-          const lastRefFound: CellRef | undefined =
-            refsFound?.[refsFound.length - 1];
+        const lastRefFound: CellRef | undefined =
+          refsFound?.[refsFound.length - 1];
 
-          const lastRefIsHover = lastRefFound
-            ? isBetween(cursorPosition, lastRefFound.start, lastRefFound.end)
-            : undefined;
+        const shouldReplaceRef = lastRefFound
+          ? isBetween(cursorPosition, lastRefFound.start, lastRefFound.end)
+          : undefined;
 
-          const cursorIsAtEnd = cursorPosition === state.value.length;
+        const cursorIsAtEnd = cursorPosition === targetCell.value.length;
 
-          if (!lastRefIsHover && cursorIsAtEnd) {
-            state.setValue(parseHTMLToText(state.value + cellClicked.id));
-          } else if (lastRefIsHover) {
-            const newValue = state.value.replace(
-              lastRefFound.ref,
-              cellClicked.id
-            );
-            state.setValue(parseHTMLToText(newValue));
-          } else {
-            focusedCellInputRef?.blur();
-          }
-        });
+        const shouldAddRef = !shouldReplaceRef && cursorIsAtEnd;
+
+        if (shouldAddRef) {
+          targetCell.value = parseHTMLToText(targetCell.value + clickedCell.id);
+        } else if (shouldReplaceRef) {
+          const newValue = targetCell.value.replace(
+            lastRefFound.ref,
+            clickedCell.id
+          );
+          targetCell.value = parseHTMLToText(newValue);
+        } else {
+          focusedCellInputRef?.blur();
+
+          return;
+        }
+
+        updateCells([
+          {
+            coords: {
+              x: targetCell.positionX,
+              y: targetCell.positionY,
+            },
+            newValue: targetCell.value,
+          },
+        ]);
 
         return;
       }
@@ -142,27 +169,35 @@ export const useMouseEvents = () => {
         return;
       }
 
+      const clickedCellCoors = {
+        x: clickedCell.positionX,
+        y: clickedCell.positionY,
+      };
+
       if (!isSelecting) {
         setIsSelecting(true);
-        setRemarkedCell(cellClicked);
-        setSelectedCells([cellClicked]);
+        setRemarkedCell(clickedCellCoors);
+        setSelectedCells([clickedCellCoors]);
         setLatestSelectedCell(null);
-        setStartSelectionCell(cellClicked);
+        setStartSelectionCoords({
+          x: clickedCell.positionX,
+          y: clickedCell.positionY,
+        });
 
         return;
       }
 
-      addCellsToSelection(cellClicked);
+      addCellsToSelection(clickedCellCoors);
     },
     [
       addCellsToSelection,
+      focusedCell,
       focusedCellInputRef,
       functionMode,
       isSelecting,
       isSelectingFunctionMode,
-      remarkedCell,
+      remarkedCellCoords,
       selectedCells.length,
-      selectedCellsState,
       setIsSelecting,
       setIsSelectingFunctionMode,
       setLatestSelectedCell,
@@ -170,23 +205,31 @@ export const useMouseEvents = () => {
       setSelectedCells,
       sheet,
       unmarkSelectedCells,
+      updateCells,
     ]
   );
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      const currentCell = getCellFromMouseEvent(e, sheet);
+      const currentCell = getCellFromMouseEvent(sheet, e);
       if (!currentCell) return;
 
-      if (isSelectingFunctionMode && startCellInFunctionMode && remarkedCell) {
+      if (
+        isSelectingFunctionMode &&
+        startCellInFunctionMode &&
+        remarkedCellCoords
+      ) {
         const selectedCells = extractCells(
           startCellInFunctionMode.id,
           currentCell.id,
           sheet
         );
 
-        const firstCell = selectedCells?.[0];
-        const latestCell = selectedCells?.[selectedCells.length - 1];
+        const firstCellCoords = selectedCells?.[0];
+        const latestCellCoords = selectedCells?.[selectedCells.length - 1];
+
+        const firstCell = sheet[firstCellCoords.y]?.[firstCellCoords.x];
+        const latestCell = sheet[latestCellCoords.y]?.[latestCellCoords.x];
 
         const isRange = firstCell !== latestCell;
 
@@ -194,49 +237,68 @@ export const useMouseEvents = () => {
           ? `${firstCell?.id}:${latestCell?.id}`
           : startCellInFunctionMode.id;
 
-        selectedCellsState.forEach((state) => {
-          if (state.cellId !== remarkedCell.id) return;
+        const targetCell = focusedCell
+          ? sheet[focusedCell?.y]?.[focusedCell?.x]
+          : undefined;
 
-          const { refsFound } = parseExpression(state.value, sheet);
+        if (!targetCell) throw new Error('Cell not found');
 
-          const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
+        const { refsFound } = parseExpression(targetCell.value, sheet);
+        const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
 
-          if (!cursorPosition) return;
+        if (!cursorPosition) throw new Error('Cursor position not found');
 
-          const lastRefFound = refsFound[refsFound.length - 1];
+        const lastRefFound = refsFound[refsFound.length - 1];
 
-          const lastRefIsHover = isBetween(
-            cursorPosition,
-            lastRefFound.start,
-            lastRefFound.end
+        const lastRefIsHover = isBetween(
+          cursorPosition,
+          lastRefFound.start,
+          lastRefFound.end
+        );
+
+        const cursorIsAtEnd = cursorPosition === targetCell.value.length;
+
+        if (!lastRefIsHover && cursorIsAtEnd) {
+          targetCell.value = parseHTMLToText(targetCell.value + cellNewRef);
+        } else if (lastRefIsHover) {
+          const newValue = targetCell.value.replace(
+            lastRefFound.ref,
+            cellNewRef
           );
+          targetCell.value = parseHTMLToText(newValue);
+        } else {
+          focusedCellInputRef?.blur();
+        }
 
-          const cursorIsAtEnd = cursorPosition === state.value.length;
-
-          if (!lastRefIsHover && cursorIsAtEnd) {
-            state.setValue(parseHTMLToText(state.value + cellNewRef));
-          } else if (lastRefIsHover) {
-            const newValue = state.value.replace(lastRefFound.ref, cellNewRef);
-            state.setValue(parseHTMLToText(newValue));
-          } else {
-            focusedCellInputRef?.blur();
-          }
-        });
+        updateCells([
+          {
+            coords: {
+              x: targetCell.positionX,
+              y: targetCell.positionY,
+            },
+            newValue: targetCell.value,
+          },
+        ]);
       }
 
-      if (isSelecting && startSelectionCell)
-        selectCells(startSelectionCell.id, currentCell.id);
+      if (isSelecting && startSelectionCoords) {
+        selectCells(startSelectionCoords, {
+          x: currentCell.positionX,
+          y: currentCell.positionY,
+        });
+      }
     },
     [
+      focusedCell,
       focusedCellInputRef,
       isSelecting,
       isSelectingFunctionMode,
-      remarkedCell,
+      remarkedCellCoords,
       selectCells,
-      selectedCellsState,
       sheet,
       startCellInFunctionMode,
-      startSelectionCell,
+      startSelectionCoords,
+      updateCells,
     ]
   );
 
