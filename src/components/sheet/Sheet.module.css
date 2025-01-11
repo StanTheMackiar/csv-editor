@@ -91,8 +91,8 @@
   height: 36px;
   z-index: 2;
   background-color: blue;
+}
 
-  span {
-    color: white;
-  }
+.function-mode-span span {
+  color: white;
 }
