@@ -8,12 +8,11 @@ import { CellProps } from './Cell';
 export const useCell = ({ cell, saveChanges }: CellProps) => {
   const [
     selectedCells,
-    addSelectedCellState,
     remarkedCell,
     setFocusedCellRef,
-    removeSelectedCellState,
     setRemarkedCellRef,
     functionMode,
+    updateCells,
     setFunctionMode,
     functionModeCell,
   ] = useSheetStore(
@@ -24,12 +23,11 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
 
       return [
         state.selectedCells,
-        state.addSelectedCellState,
         state.remarkedCell,
         state.setFocusedCellInputRef,
-        state.removeSelectedCellState,
         state.setRemarkedCellInputRef,
         state.functionMode,
+        state.updateCells,
         state.setFunctionMode,
         cellInFunction,
       ];
@@ -69,22 +67,8 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
   }, [inputFocused, setFunctionMode, value]);
 
   useEffect(() => {
-    if (isSelected) {
-      addSelectedCellState({
-        cellId: cell.id,
-        setValue: (text: string) => setValue(text),
-        value,
-      });
-    } else {
-      removeSelectedCellState(cell.id);
-    }
-  }, [
-    addSelectedCellState,
-    cell.id,
-    isSelected,
-    removeSelectedCellState,
-    value,
-  ]);
+    updateCells([{ ...cell, stateValue: value, setState: setValue }]);
+  }, [cell, setValue, updateCells, value]);
 
   useEffect(() => {
     if (isRemarked) setRemarkedCellRef(inputRef);
@@ -117,6 +101,13 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
 
   const html = parseTextToHTML(String(value));
 
+  const onClick = () => {
+    // eslint-disable-next-line no-console
+    console.log({ cell });
+    // eslint-disable-next-line no-console
+    console.log({ value });
+  };
+
   return {
     functionModeCell,
     html,
@@ -129,6 +120,7 @@ export const useCell = ({ cell, saveChanges }: CellProps) => {
 
     handleBlur,
     onChange,
+    onClick,
     onDoubleClick,
     onFocus,
   };

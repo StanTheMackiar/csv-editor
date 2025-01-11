@@ -28,7 +28,6 @@ export const useMouseEvents = () => {
     setSelectedCells,
     sheet,
     unmarkSelectedCells,
-    selectedCellsState,
     isSelectingFunctionMode,
     setIsSelectingFunctionMode,
   ] = useSheetStore(
@@ -46,7 +45,6 @@ export const useMouseEvents = () => {
       state.setSelectedCells,
       state.sheet,
       state.unmarkSelectedCells,
-      state.selectedCellsState,
       state.isSelectingFunctionMode,
       state.setIsSelectingFunctionMode,
     ])
@@ -103,8 +101,8 @@ export const useMouseEvents = () => {
           setStartCellInFunctionMode(cellClicked);
         }
 
-        selectedCellsState.forEach((state) => {
-          if (state.cellId !== remarkedCell.id) return;
+        selectedCells.forEach((state) => {
+          if (state.id !== remarkedCell.id) return;
 
           const { refsFound } = parseExpression(state.value, sheet);
 
@@ -121,13 +119,13 @@ export const useMouseEvents = () => {
           const cursorIsAtEnd = cursorPosition === state.value.length;
 
           if (!lastRefIsHover && cursorIsAtEnd) {
-            state.setValue(parseHTMLToText(state.value + cellClicked.id));
+            state.setState?.(parseHTMLToText(state.value + cellClicked.id));
           } else if (lastRefIsHover) {
             const newValue = state.value.replace(
               lastRefFound.ref,
               cellClicked.id
             );
-            state.setValue(parseHTMLToText(newValue));
+            state.setState?.(parseHTMLToText(newValue));
           } else {
             focusedCellInputRef?.blur();
           }
@@ -161,8 +159,7 @@ export const useMouseEvents = () => {
       isSelecting,
       isSelectingFunctionMode,
       remarkedCell,
-      selectedCells.length,
-      selectedCellsState,
+      selectedCells,
       setIsSelecting,
       setIsSelectingFunctionMode,
       setLatestSelectedCell,
@@ -194,8 +191,8 @@ export const useMouseEvents = () => {
           ? `${firstCell?.id}:${latestCell?.id}`
           : startCellInFunctionMode.id;
 
-        selectedCellsState.forEach((state) => {
-          if (state.cellId !== remarkedCell.id) return;
+        selectedCells.forEach((state) => {
+          if (state.id !== remarkedCell.id) return;
 
           const { refsFound } = parseExpression(state.value, sheet);
 
@@ -214,10 +211,10 @@ export const useMouseEvents = () => {
           const cursorIsAtEnd = cursorPosition === state.value.length;
 
           if (!lastRefIsHover && cursorIsAtEnd) {
-            state.setValue(parseHTMLToText(state.value + cellNewRef));
+            state.setState?.(parseHTMLToText(state.value + cellNewRef));
           } else if (lastRefIsHover) {
             const newValue = state.value.replace(lastRefFound.ref, cellNewRef);
-            state.setValue(parseHTMLToText(newValue));
+            state.setState?.(parseHTMLToText(newValue));
           } else {
             focusedCellInputRef?.blur();
           }
@@ -233,7 +230,6 @@ export const useMouseEvents = () => {
       isSelectingFunctionMode,
       remarkedCell,
       selectCells,
-      selectedCellsState,
       sheet,
       startCellInFunctionMode,
       startSelectionCell,

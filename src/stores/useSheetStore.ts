@@ -12,11 +12,7 @@ import {
   getCellByDirection,
   getSheet,
 } from '../helpers/sheet/sheet.helper';
-import {
-  CellState,
-  FunctionModeCell,
-  ICell,
-} from '../types/sheet/cell/cell.types';
+import { FunctionModeCell, ICell } from '../types/sheet/cell/cell.types';
 
 export type Direction = 'left' | 'up' | 'down' | 'right';
 interface State {
@@ -30,7 +26,6 @@ interface State {
   functionMode: boolean;
   selectedCells: ICell[];
   latestSelectedCell: ICell | null;
-  selectedCellsState: CellState[];
   functionModeCells: FunctionModeCell[];
   sheet: ICell[][];
   pressedKeys: KeyEnum[];
@@ -47,19 +42,20 @@ interface Actions {
   setRemarkedCell: (cell: ICell | null) => void;
   setPressedKeys: (keys: KeyEnum[]) => void;
   setSelectedCells: (cells: ICell[]) => void;
-  setSelectedCellsState: (cells: CellState[]) => void;
   setFunctionModeCells: (cells: FunctionModeCell[]) => void;
   setIsSelectingFunctionMode: (value: boolean) => void;
-  addSelectedCellState: (cell: CellState) => void;
-  removeSelectedCellState: (cellId: string) => void;
   moveLatestSelectedCell: (direction: Direction) => void;
   recomputeSheet: () => void;
   setFunctionMode: (value: boolean) => void;
   setLatestSelectedCell: (cell: ICell | null) => void;
   selectCells: (startCell: string, endCell: string) => void;
   unmarkSelectedCells: VoidFunction;
-  updateCell: (cellId: string, updatedCell: Partial<Omit<ICell, 'id'>>) => void;
-  updateCells: (cells: (Partial<ICell> & { id: string })[]) => void;
+  updateCells: (
+    cells: (Partial<ICell> & {
+      positionX: number;
+      positionY: number;
+    })[]
+  ) => void;
   setSheet: (
     state: Partial<Pick<State, 'colsQty' | 'rowsQty' | 'sheet'>>
   ) => void;
@@ -78,7 +74,6 @@ export const defaultState: State = {
   remarkedCell: null,
   remarkedCellInputRef: null,
   selectedCells: [],
-  selectedCellsState: [],
   sheet: getSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
 };
 
@@ -124,45 +119,20 @@ export const useSheetStore = create<State & Actions>((set) => ({
     }),
 
   updateCells: (updatedCells) =>
-    set(({ sheet, selectedCellsState }) => ({
-      sheet: sheet.map((row) =>
-        row.map((sheetCell) => {
-          const cellFinded = updatedCells.find(
-            (updatedCell) => updatedCell.id === sheetCell.id
-          );
+    set(({ sheet }) => {
+      updatedCells.forEach((cell) => {
+        const targetCell = sheet?.[cell.positionY]?.[cell.positionX];
 
-          if (cellFinded) {
-            const cellState = selectedCellsState.find(
-              (selectedCell) => selectedCell.cellId === cellFinded.id
-            );
+        if (!targetCell) return {};
 
-            if (cellState && typeof cellFinded.value !== 'undefined') {
-              cellState.setValue(cellFinded.value);
-            }
-
-            return { ...sheetCell, ...cellFinded };
-          } else return sheetCell;
-        })
-      ),
-    })),
-
-  updateCell: (cellId, updatedCell) =>
-    set(({ sheet, selectedCellsState }) => {
-      const cellState = selectedCellsState.find(
-        (selectedCell) => selectedCell.cellId === cellId
-      );
-
-      if (cellState && typeof updatedCell.value !== 'undefined')
-        cellState.setValue(updatedCell.value);
+        sheet[cell.positionY][cell.positionX] = {
+          ...targetCell,
+          ...cell,
+        };
+      });
 
       return {
-        sheet: sheet.map((row) =>
-          row.map((sheetCell) =>
-            sheetCell.id === cellId
-              ? { ...sheetCell, ...updatedCell }
-              : sheetCell
-          )
-        ),
+        sheet,
       };
     }),
 
@@ -234,46 +204,11 @@ export const useSheetStore = create<State & Actions>((set) => ({
 
   unmarkSelectedCells: () => set({ selectedCells: [] }),
 
-  setSelectedCellsState: (cells) =>
-    set({ selectedCellsState: [...new Set(cells)] }),
-
   setIsSelecting: (value) => set({ isSelecting: value }),
 
   setRemarkedCell: (cell) => set({ remarkedCell: cell }),
 
   setSelectedCells: (cells) => set({ selectedCells: [...new Set(cells)] }),
-
-  addSelectedCellState: (newCellState) =>
-    set((state) => {
-      let newSelectedCellState: CellState[] = state.selectedCellsState.slice();
-
-      const stateFinded = state.selectedCellsState.find(
-        (state) => state.cellId === newCellState.cellId
-      );
-
-      if (!stateFinded) {
-        newSelectedCellState.push(newCellState);
-      } else {
-        newSelectedCellState = newSelectedCellState.map((state) =>
-          state.cellId === newCellState.cellId ? newCellState : state
-        );
-      }
-
-      return {
-        selectedCellsState: newSelectedCellState,
-      };
-    }),
-
-  removeSelectedCellState: (cellId) =>
-    set((state) => {
-      const newSelectedCellState: CellState[] = state.selectedCellsState.filter(
-        (cellState) => cellState.cellId !== cellId
-      );
-
-      return {
-        selectedCellsState: [...new Set(newSelectedCellState)],
-      };
-    }),
 
   addCellsToSelection: (newCell) =>
     set((state) => {

@@ -16,6 +16,7 @@ import { useShallow } from 'zustand/shallow';
 
 export const useSheet = () => {
   const [
+    remarkedCell,
     colsQty,
     focusedCellInputRef,
     functionMode,
@@ -26,9 +27,9 @@ export const useSheet = () => {
     setSheet,
     sheet,
     recomputeSheet,
-    selectedCellsState,
   ] = useSheetStore(
     useShallow((state) => [
+      state.remarkedCell,
       state.colsQty,
       state.focusedCellInput,
       state.functionMode,
@@ -39,12 +40,11 @@ export const useSheet = () => {
       state.setSheet,
       state.sheet,
       state.recomputeSheet,
-      state.selectedCellsState,
     ])
   );
 
   useEffect(() => {
-    const remarkedValue = selectedCellsState[0]?.value;
+    const remarkedValue = remarkedCell?.value;
 
     if (!remarkedValue || !functionMode) {
       setFunctionModeCells([]);
@@ -79,7 +79,7 @@ export const useSheet = () => {
     });
 
     setFunctionModeCells(functionModeCells);
-  }, [functionMode, selectedCellsState, setFunctionModeCells, sheet]);
+  }, [functionMode, remarkedCell?.value, setFunctionModeCells, sheet]);
 
   const saveSheetFromCell = (cell: ICell, newValue: string) => {
     const currentSheet = sheet.slice();

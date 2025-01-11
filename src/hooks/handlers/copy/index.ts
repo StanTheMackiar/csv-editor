@@ -1,1 +1,1 @@
-export * from './useCopyEvents';
+export * from './useClipboardEvents';

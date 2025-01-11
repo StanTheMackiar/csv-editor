@@ -24,12 +24,14 @@ export const Cell: FC<CellProps> = (props) => {
 
     handleBlur,
     onChange,
+    onClick,
     onDoubleClick,
     onFocus,
   } = useCell(props);
 
   return (
     <td
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       id={`${cell.id}-cell`}
       className={clsx(s['sheet-cell'])}

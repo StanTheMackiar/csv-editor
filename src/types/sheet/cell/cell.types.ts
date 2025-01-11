@@ -6,6 +6,8 @@ export interface ICell {
   positionX: number;
   value: string;
   computedValue: string;
+  stateValue?: string;
+  setState?: (value: string) => void;
 }
 
 export type ICellSpecial = {
@@ -38,7 +40,9 @@ export type ParseExpressionReturn = {
 
 export type CellState = {
   value: string;
-  cellId: string;
+  x: number;
+  y: number;
+  id: string;
   setValue: (value: string) => void;
 };
 

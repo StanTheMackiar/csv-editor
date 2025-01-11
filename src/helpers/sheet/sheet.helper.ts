@@ -24,6 +24,8 @@ export const getSheet = (rowsQty: number, colsQty: number): ISheet =>
         ...getCellHeart(positionX, positionY),
         value: ``,
         computedValue: ``,
+        stateValue: ``,
+        setState: () => {},
       };
     })
   );

@@ -9,15 +9,21 @@ import { useShallow } from 'zustand/shallow';
 export const useCopyEvents = () => {
   const { copy, paste } = useClipboard();
 
-  const [focusedCellInputRef, selectedCells, setSelectedCells, updateCells] =
-    useSheetStore(
-      useShallow((state) => [
-        state.focusedCellInput,
-        state.selectedCells,
-        state.setSelectedCells,
-        state.updateCells,
-      ])
-    );
+  const [
+    focusedCellInputRef,
+    selectedCells,
+    setSelectedCells,
+    sheet,
+    setSheet,
+  ] = useSheetStore(
+    useShallow((state) => [
+      state.focusedCellInput,
+      state.selectedCells,
+      state.setSelectedCells,
+      state.sheet,
+      state.setSheet,
+    ])
+  );
 
   const focusedElement = focusedCellInputRef?.current;
 
@@ -73,8 +79,18 @@ export const useCopyEvents = () => {
     });
 
     setSelectedCells(newCells);
-    updateCells(newCells);
-  }, [paste, selectedCells, setSelectedCells, updateCells]);
+
+    const newSheet = sheet.slice();
+
+    newCells.forEach((cell) => {
+      sheet[cell.positionY][cell.positionX] = cell;
+      sheet[cell.positionY][cell.positionX].setState?.(cell.value);
+    });
+
+    setSheet({
+      sheet: newSheet,
+    });
+  }, [paste, selectedCells, setSelectedCells, setSheet, sheet]);
 
   useEffect(() => {
     document.addEventListener('copy', onCopy);

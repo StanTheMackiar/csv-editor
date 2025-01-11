@@ -21,7 +21,6 @@ export const usePressedKeys = () => {
     removePressedKey,
     setPressedKeys,
     selectedCells,
-    updateCell,
     updateCells,
   ] = useSheetStore(
     useShallow((state) => [
@@ -35,7 +34,6 @@ export const usePressedKeys = () => {
       state.removePressedKey,
       state.setPressedKeys,
       state.selectedCells,
-      state.updateCell,
       state.updateCells,
     ])
   );
@@ -143,10 +141,14 @@ export const usePressedKeys = () => {
       typeof remarkedElement?.innerText !== 'undefined';
 
     if (updateRemarkedCell && remarkedCell) {
-      updateCell(remarkedCell?.id, {
-        value: keyPressed,
-        computedValue: keyPressed,
-      });
+      updateCells([
+        {
+          positionY: remarkedCell.positionY,
+          positionX: remarkedCell.positionX,
+          value: keyPressed,
+          computedValue: keyPressed,
+        },
+      ]);
 
       setTimeout(() => remarkedElement.focus(), 50);
     }
@@ -156,7 +158,7 @@ export const usePressedKeys = () => {
     pressedKeys,
     remarkedCell,
     remarkedElement,
-    updateCell,
+    updateCells,
   ]);
 
   const handleKeyDown = useCallback(
