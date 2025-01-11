@@ -1,14 +1,14 @@
 import { parseHTMLToText } from '@/helpers/html-parser.helper';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { parseExpression } from '../helpers/sheet/cell/cell.helper';
-import { isValidExcelExpression } from '../helpers/sheet/cell/is-valid-exp-helper';
+import { parseExpression } from '../../../helpers/sheet/cell/cell.helper';
+import { isValidExcelExpression } from '../../../helpers/sheet/cell/is-valid-exp-helper';
 import {
   extractCells,
   getCellFromMouseEvent,
-} from '../helpers/sheet/sheet.helper';
-import { useSheetStore } from '../stores/useSheetStore';
-import { ICell } from '../types/sheet/cell/cell.types';
+} from '../../../helpers/sheet/sheet.helper';
+import { useSheetStore } from '../../../stores/useSheetStore';
+import { ICell } from '../../../types/sheet/cell/cell.types';
 
 export const useMouseEvents = () => {
   const [

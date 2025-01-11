@@ -3,7 +3,6 @@ import { FC } from 'react';
 import clsx from 'clsx';
 import { Cell } from './cells/Cell';
 
-import { useMouseEvents, usePressedKeys } from '@/hooks';
 import s from './Sheet.module.css';
 import { useSheet } from './useSheet';
 
@@ -21,9 +20,6 @@ export const Sheet: FC = () => {
     onClickRow,
     saveSheetFromCell,
   } = useSheet();
-
-  useMouseEvents();
-  usePressedKeys();
 
   return (
     <table

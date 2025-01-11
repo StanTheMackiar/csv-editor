@@ -82,22 +82,8 @@ export enum KeyEnum {
   Digit8 = '8',
   Digit9 = '9',
 
-  // Números del teclado numérico
-  Numpad0 = '0',
-  Numpad1 = '1',
-  Numpad2 = '2',
-  Numpad3 = '3',
-  Numpad4 = '4',
-  Numpad5 = '5',
-  Numpad6 = '6',
-  Numpad7 = '7',
-  Numpad8 = '8',
-  Numpad9 = '9',
   NumpadMultiply = '*',
   NumpadAdd = '+',
-  NumpadSubtract = '-',
-  NumpadDecimal = '.',
-  NumpadDivide = '/',
 
   // Símbolos y otros caracteres
   SemiColon = ';',

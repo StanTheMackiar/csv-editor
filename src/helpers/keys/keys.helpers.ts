@@ -28,7 +28,6 @@ export function isSpecialKey(key: string): boolean {
     'F9',
     'F10',
     'F11',
-    'F12',
     'ContextMenu',
     'NumLock',
     'ScrollLock',

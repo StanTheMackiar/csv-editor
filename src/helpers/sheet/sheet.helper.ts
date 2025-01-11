@@ -4,19 +4,24 @@ import { Direction } from '../../stores/useSheetStore';
 import { ICell, ICellSpecial, ISheet } from '../../types/sheet/cell/cell.types';
 import { alphabet } from '../constants/alphabet';
 
+export const getCellHeart = (positionX: number, positionY: number) => {
+  const letter = alphabet[positionX];
+  const number = positionY + 1;
+
+  return {
+    id: `${letter}${number}`,
+    letter,
+    number,
+    positionY,
+    positionX,
+  };
+};
+
 export const getSheet = (rowsQty: number, colsQty: number): ISheet =>
   Array.from({ length: rowsQty }, (_, positionY) =>
     Array.from({ length: colsQty }, (_, positionX) => {
-      const number = positionY + 1;
-      const letter = String.fromCharCode(65 + positionX);
-      const id = `${letter}${number}`;
-
       return {
-        positionY,
-        id,
-        letter,
-        number,
-        positionX,
+        ...getCellHeart(positionX, positionY),
         value: ``,
         computedValue: ``,
       };

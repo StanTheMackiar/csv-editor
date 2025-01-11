@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import KeyEnum from '../enum/key.enum';
+import KeyEnum from '../../../enum/key.enum';
 import {
   isArrowKey,
   isInputKey,
   isSpecialKey,
-} from '../helpers/keys/keys.helpers';
-import { Direction, useSheetStore } from '../stores/useSheetStore';
-import { ICell } from '../types/sheet/cell/cell.types';
+} from '../../../helpers/keys/keys.helpers';
+import { Direction, useSheetStore } from '../../../stores/useSheetStore';
+import { ICell } from '../../../types/sheet/cell/cell.types';
 
 export const usePressedKeys = () => {
   const [
@@ -89,47 +89,53 @@ export const usePressedKeys = () => {
     [focusedElement, moveRemarkedCell]
   );
 
-  const getActionByKeyPressed = useCallback((): VoidFunction | undefined => {
-    const pressedKeysValue = pressedKeys
-      .map((key) => key.toUpperCase())
-      .join('plus');
+  const getActionByKeyPressed = useCallback(
+    (pressedKeys: KeyEnum[]): VoidFunction | undefined => {
+      const pressedKeysValue = pressedKeys
+        .map((key) => key.toUpperCase())
+        .join('plus');
 
-    const keyMap: Record<string, VoidFunction | undefined> = {
-      ENTER: () => onPressEnter(),
-      BACKSPACE: () => onPressBackspace(),
-      DELETE: () => onPressBackspace(),
-      TAB: () => onPressTab(),
-      SHIFTplusTAB: () => onPressShiftPlusTab(),
-      ARROWRIGHT: () => onPressArrow('right'),
-      ARROWLEFT: () => onPressArrow('left'),
-      ARROWDOWN: () => onPressArrow('down'),
-      ARROWUP: () => onPressArrow('up'),
+      const keyMap: Record<string, VoidFunction | undefined> = {
+        ENTER: onPressEnter,
+        BACKSPACE: onPressBackspace,
+        DELETE: onPressBackspace,
+        TAB: onPressTab,
 
-      SHIFTplusARROWUP: () => onPressShiftPlusArrow('up'),
-      SHIFTplusARROWDOWN: () => onPressShiftPlusArrow('down'),
-      SHIFTplusARROWLEFT: () => onPressShiftPlusArrow('left'),
-      SHIFTplusARROWRIGHT: () => onPressShiftPlusArrow('right'),
-    };
+        ARROWRIGHT: () => onPressArrow('right'),
+        ARROWLEFT: () => onPressArrow('left'),
+        ARROWDOWN: () => onPressArrow('down'),
+        ARROWUP: () => onPressArrow('up'),
 
-    return keyMap[pressedKeysValue];
-  }, [
-    onPressArrow,
-    onPressBackspace,
-    onPressEnter,
-    onPressShiftPlusArrow,
-    onPressShiftPlusTab,
-    onPressTab,
-    pressedKeys,
-  ]);
+        SHIFTplusTAB: onPressShiftPlusTab,
+        SHIFTplusARROWUP: () => onPressShiftPlusArrow('up'),
+        SHIFTplusARROWDOWN: () => onPressShiftPlusArrow('down'),
+        SHIFTplusARROWLEFT: () => onPressShiftPlusArrow('left'),
+        SHIFTplusARROWRIGHT: () => onPressShiftPlusArrow('right'),
+      };
+
+      return keyMap[pressedKeysValue];
+    },
+    [
+      onPressArrow,
+      onPressBackspace,
+      onPressEnter,
+      onPressShiftPlusArrow,
+      onPressShiftPlusTab,
+      onPressTab,
+    ]
+  );
 
   const handlePressedKeys = useCallback(() => {
     if (!pressedKeys.length) return;
 
-    const keyAction = getActionByKeyPressed();
+    const keyAction = getActionByKeyPressed(pressedKeys);
 
     if (keyAction) return keyAction();
 
-    const inputKeyPressed = pressedKeys.find((key) => isInputKey(key));
+    const isSingleKeyPressed = pressedKeys.length === 1;
+
+    const keyPressed = pressedKeys[0];
+    const inputKeyPressed = isSingleKeyPressed && isInputKey(keyPressed);
 
     const updateRemarkedCell =
       inputKeyPressed &&
@@ -138,8 +144,8 @@ export const usePressedKeys = () => {
 
     if (updateRemarkedCell && remarkedCell) {
       updateCell(remarkedCell?.id, {
-        value: inputKeyPressed,
-        computedValue: inputKeyPressed,
+        value: keyPressed,
+        computedValue: keyPressed,
       });
 
       setTimeout(() => remarkedElement.focus(), 50);
@@ -157,10 +163,10 @@ export const usePressedKeys = () => {
     (e: KeyboardEvent) => {
       const keyCode = e.key;
 
-      const isArrow = isArrowKey(keyCode);
-      const isSpecial = isSpecialKey(keyCode);
+      const keyIsArrow = isArrowKey(keyCode);
+      const keyIsSpecial = isSpecialKey(keyCode);
 
-      const allowDefaultEvent = !isSpecial || (focusedElement && isArrow);
+      const allowDefaultEvent = !keyIsSpecial || (focusedElement && keyIsArrow);
 
       if (!allowDefaultEvent) e.preventDefault();
 
@@ -171,17 +177,19 @@ export const usePressedKeys = () => {
 
   const handleKeyUp = useCallback(
     (e: KeyboardEvent) => {
-      const keyCode = e.key;
+      const keyCode = e.key as KeyEnum;
 
-      if (e.key === 'Shift') {
+      const hasSpecialKey = pressedKeys.some((key) => isSpecialKey(key));
+
+      if (hasSpecialKey) {
         setPressedKeys([]);
 
         return;
       }
 
-      removePressedKey(keyCode as KeyEnum);
+      removePressedKey(keyCode);
     },
-    [removePressedKey, setPressedKeys]
+    [pressedKeys, removePressedKey, setPressedKeys]
   );
 
   useEffect(() => {
