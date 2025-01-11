@@ -136,6 +136,8 @@
 }
 
 .sheet-input {
+  display: flex;
+  align-items: center;
   border: none;
   bottom: 0;
   font-size: 16px;
@@ -154,11 +156,12 @@
 
 .sheet-cell:focus-within .sheet-input {
   background-color: white;
-  z-index: 10;
+  z-index: 2;
   overflow: visible;
   white-space: normal;
-  height: fit-content;
+  /* height: fit-content; */
   width: fit-content;
+  overflow: visible;
   box-shadow: 0 0 0 2px rgb(100, 151, 239);
 }
 
