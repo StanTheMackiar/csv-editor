@@ -32,7 +32,7 @@ export const Cell: FC<CellProps> = (props) => {
     <td
       onDoubleClick={onDoubleClick}
       id={`${cell.id}-cell`}
-      className={s['sheet-cell']}
+      className={clsx(s['sheet-cell'])}
       key={cell.id}
     >
       <div
@@ -54,7 +54,6 @@ export const Cell: FC<CellProps> = (props) => {
           [s['cell-shadow']]: isShadowed,
           [s['cell-marked']]: isRemarked,
           [s['cell-function-mode']]: isFunctionMode,
-          [s['cell-focused']]: inputFocused,
           'pointer-events-none': !inputFocused,
         })}
         style={{

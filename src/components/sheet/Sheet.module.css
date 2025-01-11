@@ -16,9 +16,16 @@
 
 .sheet-header-cell {
   height: 36px;
+  width: auto;
   padding-inline: 12px;
   background-color: rgb(236, 236, 236);
   font-weight: bold;
+}
+
+.sheet-row td:first-child {
+  width: 40px; /* o el ancho que prefieras */
+  min-width: 40px;
+  max-width: 40px;
 }
 
 .sheet-header-cell.selected {
@@ -28,20 +35,36 @@
 }
 
 .sheet-cell {
-  width: auto;
   position: relative;
+  height: auto;
+  background-color: white;
+  width: fit-content; /* O el ancho que prefieras */
 }
 
 .sheet-input {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  outline: none;
   border: none;
-  line-height: 30px;
+  bottom: 0;
   font-size: 16px;
+  left: 0;
+  line-height: 30px;
+  min-width: 100%;
+  outline: none;
   padding-inline: 12px;
-  width: 100%;
+  position: absolute;
+  right: 0;
+  top: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sheet-cell:focus-within .sheet-input {
+  background-color: white;
+  z-index: 10;
+  overflow: visible;
+  white-space: normal;
+  height: fit-content;
+  box-shadow: 0 0 0 2px rgb(100, 151, 239);
 }
 
 .cell-marked {
@@ -54,13 +77,7 @@
 }
 
 .cell-function-mode {
-  color: rgb(0, 0, 0);
-}
-
-.cell-focused {
-  box-shadow: 0 0 0 2px rgb(100, 151, 239); /* color y tamaño del outline */
-  position: relative; /* para manejar el z-index */
-  z-index: 1; /* asegúrate de que esté encima */
+  color: rgb(75, 3, 255);
 }
 
 .function-mode-span {
