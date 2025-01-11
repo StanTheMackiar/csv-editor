@@ -1,17 +1,21 @@
-import { parseHTMLToText } from '@/helpers/html-parser.helper';
+import {
+  getAbsoluteCursorPosition,
+  isBetween,
+  parseExpression,
+  parseHTMLToText,
+} from '@/helpers';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { parseExpression } from '../../../helpers/sheet/cell/cell.helper';
-import { isValidExcelExpression } from '../../../helpers/sheet/cell/is-valid-exp-helper';
 import {
   extractCells,
   getCellFromMouseEvent,
 } from '../../../helpers/sheet/sheet.helper';
 import { useSheetStore } from '../../../stores/useSheetStore';
-import { ICell } from '../../../types/sheet/cell/cell.types';
+import { CellRef, ICell } from '../../../types/sheet/cell/cell.types';
 
 export const useMouseEvents = () => {
   const [
+    focusedCellInput,
     addCellsToSelection,
     functionMode,
     isSelecting,
@@ -29,6 +33,7 @@ export const useMouseEvents = () => {
     setIsSelectingFunctionMode,
   ] = useSheetStore(
     useShallow((state) => [
+      state.focusedCellInput,
       state.addCellsToSelection,
       state.functionMode,
       state.isSelecting,
@@ -47,6 +52,8 @@ export const useMouseEvents = () => {
     ])
   );
 
+  const focusedCellInputRef = focusedCellInput?.current;
+
   const [startSelectionCell, setStartSelectionCell] = useState<ICell | null>(
     null
   );
@@ -55,11 +62,19 @@ export const useMouseEvents = () => {
 
   const handleMouseDown = useCallback(
     (e: MouseEvent) => {
-      if (e.button !== 0) return;
+      const allowedButtons = [0, 2];
+
+      if (e.button === 2) e.preventDefault();
+
+      if (!allowedButtons.includes(e.button)) {
+        return;
+      }
 
       const cellClicked = getCellFromMouseEvent(e, sheet);
 
       if (!cellClicked) {
+        if (focusedCellInputRef) return;
+
         setLatestSelectedCell(null);
         setRemarkedCell(null);
         unmarkSelectedCells();
@@ -91,20 +106,30 @@ export const useMouseEvents = () => {
         selectedCellsState.forEach((state) => {
           if (state.cellId !== remarkedCell.id) return;
 
-          let newValue = state.value + cellClicked.id;
+          const { refsFound } = parseExpression(state.value, sheet);
 
-          const isValidExp = isValidExcelExpression(state.value);
+          const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
+          if (!cursorPosition) return;
 
-          if (!isValidExp) {
+          const lastRefFound: CellRef | undefined =
+            refsFound?.[refsFound.length - 1];
+
+          const lastRefIsHover = lastRefFound
+            ? isBetween(cursorPosition, lastRefFound.start, lastRefFound.end)
+            : undefined;
+
+          const cursorIsAtEnd = cursorPosition === state.value.length;
+
+          if (!lastRefIsHover && cursorIsAtEnd) {
+            state.setValue(parseHTMLToText(state.value + cellClicked.id));
+          } else if (lastRefIsHover) {
+            const newValue = state.value.replace(
+              lastRefFound.ref,
+              cellClicked.id
+            );
             state.setValue(parseHTMLToText(newValue));
           } else {
-            const { refsFound } = parseExpression(state.value, sheet);
-
-            const latestRefFound = refsFound[refsFound.length - 1];
-            if (latestRefFound) {
-              newValue = state.value.replace(latestRefFound, cellClicked.id);
-              state.setValue(parseHTMLToText(newValue));
-            }
+            focusedCellInputRef?.blur();
           }
         });
 
@@ -131,6 +156,7 @@ export const useMouseEvents = () => {
     },
     [
       addCellsToSelection,
+      focusedCellInputRef,
       functionMode,
       isSelecting,
       isSelectingFunctionMode,
@@ -169,24 +195,31 @@ export const useMouseEvents = () => {
           : startCellInFunctionMode.id;
 
         selectedCellsState.forEach((state) => {
-          if (state.cellId === remarkedCell.id) {
-            let newValue = state.value + cellNewRef;
+          if (state.cellId !== remarkedCell.id) return;
 
-            const isValidExp = isValidExcelExpression(state.value);
+          const { refsFound } = parseExpression(state.value, sheet);
 
-            if (!isValidExp) {
-              state.setValue(parseHTMLToText(newValue));
-            } else {
-              const { refsFound } = parseExpression(state.value, sheet);
+          const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
 
-              const latestRefFound = refsFound[refsFound.length - 1];
+          if (!cursorPosition) return;
 
-              if (latestRefFound) {
-                newValue = state.value.replace(latestRefFound, cellNewRef);
+          const lastRefFound = refsFound[refsFound.length - 1];
 
-                state.setValue(parseHTMLToText(newValue));
-              }
-            }
+          const lastRefIsHover = isBetween(
+            cursorPosition,
+            lastRefFound.start,
+            lastRefFound.end
+          );
+
+          const cursorIsAtEnd = cursorPosition === state.value.length;
+
+          if (!lastRefIsHover && cursorIsAtEnd) {
+            state.setValue(parseHTMLToText(state.value + cellNewRef));
+          } else if (lastRefIsHover) {
+            const newValue = state.value.replace(lastRefFound.ref, cellNewRef);
+            state.setValue(parseHTMLToText(newValue));
+          } else {
+            focusedCellInputRef?.blur();
           }
         });
       }
@@ -195,6 +228,7 @@ export const useMouseEvents = () => {
         selectCells(startSelectionCell.id, currentCell.id);
     },
     [
+      focusedCellInputRef,
       isSelecting,
       isSelectingFunctionMode,
       remarkedCell,

@@ -56,9 +56,9 @@ export const useSheet = () => {
 
     const functionModeCells: FunctionModeCell[] = [];
 
-    refsFound.forEach((ref, i) => {
+    refsFound.forEach((cell, i) => {
       const color = getColorFromSequence(i);
-      const [startCell, endCell] = ref.split(':');
+      const [startCell, endCell] = cell.ref.split(':');
       const isRange = !!endCell;
 
       if (isRange) {

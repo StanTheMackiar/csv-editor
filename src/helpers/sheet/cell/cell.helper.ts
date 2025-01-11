@@ -1,5 +1,6 @@
 import {
   CellFound,
+  CellRef,
   ICell,
   ISheet,
   ParseExpressionReturn,
@@ -11,17 +12,14 @@ export const parseExpression = (
   value: string,
   sheet: ISheet
 ): ParseExpressionReturn => {
-  const cellHasFunction = value.startsWith('=');
-
-  const exp = cellHasFunction ? value.substring(1) : value;
   const isMathExp = isMathExpression(value);
 
   const cellsFound: CellFound[] = [];
-  const refsFound: string[] = [];
+  const refsFound: CellRef[] = [];
 
-  const parsedExp = exp.replace(
+  const parsed = value.replace(
     CELL_REGEX,
-    (original, startCol, startRow, range, endCol, endRow) => {
+    (original, startCol, startRow, range, endCol, endRow, offset) => {
       if (!startCol || !startRow) {
         return original; // Devuelve el texto original si no es válido
       }
@@ -37,7 +35,11 @@ export const parseExpression = (
         const endId = `${endCol}${endRow}`;
 
         const rangeRef = `${startId}:${endId}`;
-        refsFound.push(rangeRef);
+        refsFound.push({
+          start: offset,
+          end: offset + rangeRef.length,
+          ref: rangeRef,
+        });
 
         const values: string[] = [];
 
@@ -45,7 +47,12 @@ export const parseExpression = (
           for (let x = startX; x <= endX; x++) {
             const cellId = `${String.fromCharCode(x + 'A'.charCodeAt(0))}${y + 1}`;
             const computedValue = sheet?.[y]?.[x]?.computedValue ?? '';
-            cellsFound.push({ id: cellId, value: computedValue, y, x });
+            cellsFound.push({
+              id: cellId,
+              value: computedValue,
+              y,
+              x,
+            });
 
             const numberValue = Number(computedValue);
             const isString = isNaN(numberValue);
@@ -57,14 +64,23 @@ export const parseExpression = (
       } else {
         // Es una celda, por ejemplo: A1
         const id = `${startCol}${startRow}`;
-        refsFound.push(id);
+        refsFound.push({
+          start: offset,
+          end: offset + id.length,
+          ref: id,
+        });
 
         const x = startCol.charCodeAt(0) - 'A'.charCodeAt(0);
         const y = parseInt(startRow, 10) - 1;
 
         const computedValue = sheet?.[y]?.[x].computedValue ?? '';
 
-        cellsFound.push({ id, value: computedValue, y, x });
+        cellsFound.push({
+          id,
+          value: computedValue,
+          y,
+          x,
+        });
 
         const numberValue = Number(computedValue);
 
@@ -76,7 +92,16 @@ export const parseExpression = (
     }
   );
 
-  return { isMathExp, parsedExp, cellsFound, refsFound, isFunction: true };
+  const isFunction = value.startsWith('=');
+  const parsedExp = isFunction ? parsed.substring(1) : parsed;
+
+  return {
+    isMathExp,
+    parsedExp,
+    cellsFound,
+    refsFound,
+    isFunction,
+  };
 };
 
 export const parseRange = (range: `${string}:${string}`) => {
