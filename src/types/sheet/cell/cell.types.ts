@@ -1,11 +1,9 @@
 export interface ICell {
-  positionY: number;
-  id: string;
-  letter: string;
-  number: number;
-  positionX: number;
-  value: string;
   computedValue: string;
+  id: string;
+  value: string;
+  x: number;
+  y: number;
 }
 
 export type ICellSpecial = {

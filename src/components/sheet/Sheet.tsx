@@ -73,7 +73,13 @@ export const Sheet: FC = () => {
             const rowNumber = sheetNumbers[i];
 
             return (
-              <tr className={s['sheet-row']} key={rowNumber.value}>
+              <tr
+                className={s['sheet-row']}
+                key={rowNumber.value}
+                style={{
+                  lineHeight: `${rowHeights[rowNumber.name] || ROW_DEFAULT_HEIGHT}px`,
+                }}
+              >
                 <td
                   onClick={() => onClickRow(rowNumber)}
                   className={clsx({

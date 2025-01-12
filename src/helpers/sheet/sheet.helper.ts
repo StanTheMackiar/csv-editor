@@ -9,26 +9,22 @@ import {
 } from '../../types/sheet/cell/cell.types';
 import { alphabet } from '../constants/alphabet';
 
-export const getCellHeart = (positionX: number, positionY: number) => {
-  const letter = alphabet[positionX];
-  const number = positionY + 1;
+export const getCellId = (x: number, y: number) => {
+  const letter = alphabet[x];
+  const number = y + 1;
 
-  return {
-    id: `${letter}${number}`,
-    letter,
-    number,
-    positionY,
-    positionX,
-  };
+  return `${letter}${number}`;
 };
 
-export const getSheet = (rowsQty: number, colsQty: number): ISheet =>
-  Array.from({ length: rowsQty }, (_, positionY) =>
-    Array.from({ length: colsQty }, (_, positionX) => {
+export const createSheet = (rowsQty: number, colsQty: number): ISheet =>
+  Array.from({ length: rowsQty }, (_, y) =>
+    Array.from({ length: colsQty }, (_, x) => {
       return {
-        ...getCellHeart(positionX, positionY),
-        value: ``,
         computedValue: ``,
+        id: getCellId(x, y),
+        value: ``,
+        x,
+        y,
       };
     })
   );
@@ -53,7 +49,7 @@ export const adjustSheetSize = (
   currentSheet: ISheet
 ): ISheet => {
   // Genera una nueva hoja completa
-  const newSheet = getSheet(rows, cols);
+  const newSheet = createSheet(rows, cols);
 
   // Sobrescribe las celdas de la nueva hoja con las celdas existentes en currentSheet, si las hay
   for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
@@ -153,20 +149,20 @@ export const getCellByDirection = (
 
   const coordsMap: Record<Direction, { x: number; y: number }> = {
     up: {
-      x: cell.positionX,
-      y: cell.positionY - 1,
+      x: cell.x,
+      y: cell.y - 1,
     },
     down: {
-      x: cell.positionX,
-      y: cell.positionY + 1,
+      x: cell.x,
+      y: cell.y + 1,
     },
     right: {
-      x: cell.positionX + 1,
-      y: cell.positionY,
+      x: cell.x + 1,
+      y: cell.y,
     },
     left: {
-      x: cell.positionX - 1,
-      y: cell.positionY,
+      x: cell.x - 1,
+      y: cell.y,
     },
   };
   const coords = coordsMap[dir];

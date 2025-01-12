@@ -136,13 +136,10 @@
 }
 
 .sheet-input {
-  display: flex;
-  align-items: center;
   border: none;
   bottom: 0;
   font-size: 16px;
   left: 0;
-  line-height: 30px;
   min-width: 100%;
   outline: none;
   padding-inline: 12px;

@@ -88,8 +88,8 @@ export const useSheet = () => {
   const onClickColumn = (col: ICellSpecial) => {
     const columnsFound: CellCoords[] = sheet
       .flat()
-      .filter((cell) => cell.positionX === col.value)
-      .map((cell) => ({ x: cell.positionX, y: cell.positionY }));
+      .filter((cell) => cell.x === col.value)
+      .map((cell) => ({ x: cell.x, y: cell.y }));
 
     setSelectedCells(columnsFound);
   };
@@ -97,17 +97,15 @@ export const useSheet = () => {
   const onClickRow = (row: ICellSpecial) => {
     const rowsFound: CellCoords[] = sheet
       .flat()
-      .filter((cell) => cell.positionY === row.value)
-      .map((cell) => ({ x: cell.positionX, y: cell.positionY }));
+      .filter((cell) => cell.y === row.value)
+      .map((cell) => ({ x: cell.x, y: cell.y }));
 
     setSelectedCells(rowsFound);
   };
 
   const onClickAll = () => {
     setSelectedCells(
-      sheet.flatMap((row) =>
-        row.map((cell) => ({ x: cell.positionX, y: cell.positionY }))
-      )
+      sheet.flatMap((row) => row.map((cell) => ({ x: cell.x, y: cell.y })))
     );
   };
 

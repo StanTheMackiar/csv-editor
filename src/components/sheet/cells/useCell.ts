@@ -37,13 +37,10 @@ export const useCell = ({ cell }: CellProps) => {
   );
 
   const functionModeCell = functionModeCells.find(
-    (funcCell) =>
-      funcCell.coords.x === cell.positionX &&
-      funcCell.coords.y === cell.positionY
+    (funcCell) => funcCell.coords.x === cell.x && funcCell.coords.y === cell.y
   );
 
-  const inputFocused =
-    focusedCell?.x === cell.positionX && focusedCell?.y === cell.positionY;
+  const inputFocused = focusedCell?.x === cell.x && focusedCell?.y === cell.y;
 
   const inputRef = useRef<HTMLDivElement>(null);
 
@@ -52,16 +49,14 @@ export const useCell = ({ cell }: CellProps) => {
   const isSelected = useMemo(
     () =>
       selectedCells.some(
-        (selectedCell) =>
-          selectedCell.x === cell.positionX && selectedCell.y === cell.positionY
+        (selectedCell) => selectedCell.x === cell.x && selectedCell.y === cell.y
       ),
     [selectedCells, cell]
   );
 
   const { isRemarked, isShadowed } = useMemo(() => {
     const isShadowed = selectedCells.length > 1 && isSelected;
-    const isRemarked =
-      remarkedCell?.x === cell.positionX && remarkedCell?.y === cell.positionY;
+    const isRemarked = remarkedCell?.x === cell.x && remarkedCell?.y === cell.y;
 
     return {
       isShadowed,
@@ -95,8 +90,8 @@ export const useCell = ({ cell }: CellProps) => {
 
   const onFocus = () => {
     setFocusedCell({
-      x: cell.positionX,
-      y: cell.positionY,
+      x: cell.x,
+      y: cell.y,
     });
 
     setFocusedCellRef(inputRef);
@@ -111,8 +106,8 @@ export const useCell = ({ cell }: CellProps) => {
     updateCells([
       {
         coords: {
-          x: cell.positionX,
-          y: cell.positionY,
+          x: cell.x,
+          y: cell.y,
         },
         newValue: text,
       },

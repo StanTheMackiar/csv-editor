@@ -153,8 +153,8 @@ export const useMouseEvents = () => {
         updateCells([
           {
             coords: {
-              x: targetCell.positionX,
-              y: targetCell.positionY,
+              x: targetCell.x,
+              y: targetCell.y,
             },
             newValue: targetCell.value,
           },
@@ -170,8 +170,8 @@ export const useMouseEvents = () => {
       }
 
       const clickedCellCoors = {
-        x: clickedCell.positionX,
-        y: clickedCell.positionY,
+        x: clickedCell.x,
+        y: clickedCell.y,
       };
 
       if (!isSelecting) {
@@ -180,8 +180,8 @@ export const useMouseEvents = () => {
         setSelectedCells([clickedCellCoors]);
         setLatestSelectedCell(null);
         setStartSelectionCoords({
-          x: clickedCell.positionX,
-          y: clickedCell.positionY,
+          x: clickedCell.x,
+          y: clickedCell.y,
         });
 
         return;
@@ -273,8 +273,8 @@ export const useMouseEvents = () => {
         updateCells([
           {
             coords: {
-              x: targetCell.positionX,
-              y: targetCell.positionY,
+              x: targetCell.x,
+              y: targetCell.y,
             },
             newValue: targetCell.value,
           },
@@ -283,8 +283,8 @@ export const useMouseEvents = () => {
 
       if (isSelecting && startSelectionCoords) {
         selectCells(startSelectionCoords, {
-          x: currentCell.positionX,
-          y: currentCell.positionY,
+          x: currentCell.x,
+          y: currentCell.y,
         });
       }
     },

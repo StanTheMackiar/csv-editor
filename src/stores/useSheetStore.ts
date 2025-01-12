@@ -8,9 +8,9 @@ import KeyEnum from '../enum/key.enum';
 import { computeCell } from '../helpers/sheet/cell/cell.helper';
 import {
   adjustSheetSize,
+  createSheet,
   extractCells,
   getCellByDirection,
-  getSheet,
 } from '../helpers/sheet/sheet.helper';
 import {
   CellCoords,
@@ -78,7 +78,7 @@ export const defaultState: State = {
   remarkedCell: null,
   remarkedCellInputRef: null,
   selectedCells: [],
-  sheet: getSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
+  sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
 };
 
 export const useSheetStore = create<State & Actions>((set, get) => ({
@@ -199,8 +199,8 @@ export const useSheetStore = create<State & Actions>((set, get) => ({
         const newLatestSelectedCellCoords = getCellByDirection(
           direction,
           {
-            x: targetCell.positionX,
-            y: targetCell.positionY,
+            x: targetCell.x,
+            y: targetCell.y,
           },
           sheet
         );
