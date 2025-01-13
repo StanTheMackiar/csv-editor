@@ -156,13 +156,15 @@ export const Sheet: FC = () => {
         </tbody>
       </table>
 
-      <SheetContextualMenu
-        onCopy={onCopy}
-        onCut={onCut}
-        onPaste={onPaste}
-        onClean={onCleanCells}
-        menuPosition={menuPosition}
-      />
+      {menuPosition && (
+        <SheetContextualMenu
+          menuPosition={menuPosition}
+          onCopy={onCopy}
+          onCut={onCut}
+          onPaste={onPaste}
+          onClean={onCleanCells}
+        />
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { FC } from 'react';
 
 interface Props {
-  menuPosition: { x: number; y: number } | null;
+  menuPosition: { x: number; y: number };
   onCopy: VoidFunction;
   onCut: VoidFunction;
   onPaste: VoidFunction;
@@ -15,8 +15,6 @@ export const SheetContextualMenu: FC<Props> = ({
   onPaste,
   onClean,
 }) => {
-  if (!menuPosition) return null;
-
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
