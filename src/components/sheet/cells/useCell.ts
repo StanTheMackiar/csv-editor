@@ -131,11 +131,6 @@ export const useCell = ({ cell }: CellProps) => {
     );
   };
 
-  const onClick = () => {
-    // eslint-disable-next-line no-console
-    console.info(cell);
-  };
-
   const html = useMemo<string>(() => {
     const cellHasFunction = cell.value.startsWith('=');
 
@@ -161,7 +156,6 @@ export const useCell = ({ cell }: CellProps) => {
 
     handleBlur,
     onChange,
-    onClick,
     onDoubleClick,
     onFocus,
   };

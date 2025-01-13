@@ -50,8 +50,8 @@ export const parseExpression = (
 
         const rangeRef = `${startId}:${endId}`;
         refs.push({
-          start: offset,
-          end: offset + rangeRef.length,
+          start: offset + 1,
+          end: offset + rangeRef.length + 1,
           ref: rangeRef,
         });
 
@@ -77,8 +77,8 @@ export const parseExpression = (
         const { x, y } = getCoordsById(cellId);
 
         refs.push({
-          start: offset,
-          end: offset + cellId.length,
+          start: offset + 1,
+          end: offset + cellId.length + 1,
           ref: cellId,
         });
 
@@ -128,16 +128,23 @@ export const computeCell = (
 
   try {
     const isValid = isValidFuncExpression(computedValue);
-    if (!isValid) throw new Error('#INVALID');
+
+    if (!isValid) {
+      const errorMsg = '#INVALID_EXPRESSION';
+
+      throw new Error(errorMsg, {
+        cause: errorMsg,
+      });
+    }
 
     const { parsedExp } = parseExpression(computedValue, sheet);
     const finalExp = String(eval(parsedExp));
-
     computedValue = finalExp;
   } catch (error) {
+    console.error(error);
     computedValue = '#ERROR';
 
-    if (error instanceof Error) {
+    if (error instanceof Error && error.cause) {
       computedValue = error.message;
     }
   }

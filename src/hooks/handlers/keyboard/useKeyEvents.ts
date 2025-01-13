@@ -48,6 +48,7 @@ export const usePressedKeys = () => {
 
   const onPressEnter = useCallback(() => {
     if (focusedElement) {
+      remarkedElement?.blur();
       moveRemarkedCell('down');
 
       return;
@@ -57,12 +58,16 @@ export const usePressedKeys = () => {
   }, [focusedElement, moveRemarkedCell, remarkedElement]);
 
   const onPressTab = useCallback(() => {
+    remarkedElement?.blur();
+
     moveRemarkedCell('right');
-  }, [moveRemarkedCell]);
+  }, [moveRemarkedCell, remarkedElement]);
 
   const onPressShiftPlusTab = useCallback(() => {
+    remarkedElement?.blur();
+
     moveRemarkedCell('left');
-  }, [moveRemarkedCell]);
+  }, [moveRemarkedCell, remarkedElement]);
 
   const onPressShiftPlusArrow = useCallback(
     (direction: Direction) => {
