@@ -1,6 +1,6 @@
 import {
-  CellCoords,
   CellRef,
+  Coords,
   ICell,
   ISheet,
   ParseExpressionReturn,
@@ -13,7 +13,7 @@ export const parseExpression = (
   value: string,
   sheet: ISheet
 ): ParseExpressionReturn => {
-  const coords: CellCoords[] = [];
+  const coords: Coords[] = [];
   const refs: CellRef[] = [];
 
   const isFunction = value.startsWith('=');
@@ -27,71 +27,73 @@ export const parseExpression = (
     };
   }
 
-  const parsedExp = value
+  const finalValue = value
     .substring(1)
-    .replace(
-      CELL_REGEX,
-      (original, startCol, startRow, range, endCol, endRow, offset) => {
-        if (!startCol || !startRow) {
-          return original; // Devuelve el texto original si no es válido
-        }
+    .trim()
+    //? Reemplazar los paréntesis que contienen rangos
+    .replace(/\(([^)]+)\)/g, (match) => match.replace(/;/g, ','));
 
-        if (range) {
-          // Es un rango, por ejemplo: A1:A17
-          const startId = `${startCol}${startRow}`;
-          const endId = `${endCol}${endRow}`;
-
-          const startCoords = getCoordsById(startId);
-          const endCoords = getCoordsById(endId);
-
-          const rangeRef = `${startId}:${endId}`;
-          refs.push({
-            start: offset,
-            end: offset + rangeRef.length,
-            ref: rangeRef,
-          });
-
-          const values: string[] = [];
-
-          for (let y = startCoords.y; y <= endCoords.y; y++) {
-            for (let x = startCoords.x; x <= endCoords.x; x++) {
-              const cell = getCell({ x, y }, sheet);
-              const computedValue = cell.computedValue || cell.value;
-
-              coords.push({ y, x });
-
-              const numberValue = Number(computedValue);
-              const isString = isNaN(numberValue);
-
-              values.push(
-                isString ? `'${computedValue}'` : String(numberValue)
-              );
-            }
-          }
-
-          return values.join(',');
-        } else {
-          const cellId = `${startCol}${startRow}`;
-          const { x, y } = getCoordsById(cellId);
-
-          refs.push({
-            start: offset,
-            end: offset + cellId.length,
-            ref: cellId,
-          });
-
-          const cell = getCell({ x, y }, sheet);
-          const computedValue = cell.computedValue || cell.value;
-
-          coords.push({ y, x });
-
-          const numberValue = Number(computedValue);
-          const isString = isNaN(numberValue);
-
-          return String(isString ? `'${computedValue}'` : numberValue);
-        }
+  const parsedExp = finalValue.replace(
+    CELL_REGEX,
+    (original, startCol, startRow, range, endCol, endRow, offset) => {
+      if (!startCol || !startRow) {
+        return original; // Devuelve el texto original si no es válido
       }
-    );
+
+      if (range) {
+        // Es un rango, por ejemplo: A1:A17
+        const startId = `${startCol}${startRow}`;
+        const endId = `${endCol}${endRow}`;
+
+        const startCoords = getCoordsById(startId);
+        const endCoords = getCoordsById(endId);
+
+        const rangeRef = `${startId}:${endId}`;
+        refs.push({
+          start: offset,
+          end: offset + rangeRef.length,
+          ref: rangeRef,
+        });
+
+        const values: string[] = [];
+
+        for (let y = startCoords.y; y <= endCoords.y; y++) {
+          for (let x = startCoords.x; x <= endCoords.x; x++) {
+            const cell = getCell({ x, y }, sheet);
+            const computedValue = cell.computedValue || cell.value;
+
+            coords.push({ y, x });
+
+            const numberValue = Number(computedValue);
+            const isString = isNaN(numberValue);
+
+            values.push(isString ? `'${computedValue}'` : String(numberValue));
+          }
+        }
+
+        return values.join(',');
+      } else {
+        const cellId = `${startCol}${startRow}`;
+        const { x, y } = getCoordsById(cellId);
+
+        refs.push({
+          start: offset,
+          end: offset + cellId.length,
+          ref: cellId,
+        });
+
+        const cell = getCell({ x, y }, sheet);
+        const computedValue = cell.computedValue || cell.value;
+
+        coords.push({ y, x });
+
+        const numberValue = Number(computedValue);
+        const isString = isNaN(numberValue);
+
+        return String(isString ? `'${computedValue}'` : numberValue);
+      }
+    }
+  );
 
   return {
     coords,

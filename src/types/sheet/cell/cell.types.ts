@@ -1,8 +1,6 @@
-export interface ICell {
+export interface ICell extends Coords {
   computedValue?: string;
   value: string;
-  x: number;
-  y: number;
 }
 
 export type ICellSpecial = {
@@ -26,18 +24,18 @@ export type CellRef = {
 };
 
 export type ParseExpressionReturn = {
-  coords: CellCoords[];
+  coords: Coords[];
   refs: CellRef[];
   isFunction: boolean;
   parsedExp: string;
 };
 
-export type CellCoords = {
+export type Coords = {
   x: number;
   y: number;
 };
 
 export type FunctionModeCell = {
-  coords: CellCoords;
+  coords: Coords;
   color: string;
 };

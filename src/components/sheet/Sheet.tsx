@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef, useState } from 'react';
+import { FC } from 'react';
 
 import clsx from 'clsx';
 import { Cell } from './cells/Cell';
@@ -7,11 +7,13 @@ import {
   COLUMN_DEFAULT_WIDTH,
   COLUMN_MIN_WIDTH,
   ROW_DEFAULT_HEIGHT,
+  ROW_MIN_HEIGHT,
 } from '@/helpers/constants/sheet-config.helper';
-import { useClipboardEvents } from '@/hooks';
+import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
 import { SheetContextualMenu } from './contextual-menu/SheetContextualMenu';
 import s from './Sheet.module.css';
 import { useSheet } from './useSheet';
+import { useSheetClipboard } from './useSheetClipboard';
 import { useSheetRedimension } from './useSheetRedimension';
 
 export const Sheet: FC = () => {
@@ -32,51 +34,46 @@ export const Sheet: FC = () => {
   const { columnWidths, rowHeights, resizeColumnWidth, resizeRowHeight } =
     useSheetRedimension();
 
-  const { onCopy, onCut, onPaste } = useClipboardEvents();
+  const {
+    menuPosition,
 
-  const sheetRef = useRef<HTMLDivElement>(null);
+    onCopy,
+    onCut,
+    onPaste,
+    openContextualMenu,
+    sheetRef,
+  } = useSheetClipboard();
 
-  const [menuPosition, setMenuPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-
-  const handleRightClick = (event: React.MouseEvent) => {
-    event.preventDefault(); // Evita que se abra el menú contextual del navegador por defecto
-
-    const { clientX, clientY } = event;
-    setMenuPosition({ x: clientX, y: clientY });
-  };
-
-  // Cierra el menú al hacer clic fuera
-  const handleClickOutside = () => {
-    setMenuPosition(null);
-  };
-
-  useEffect(() => {
-    document.addEventListener('click', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    const ref = sheetRef.current;
-    if (!ref) return;
-
-    const handleContextMenu = (event: MouseEvent) => {
-      event.preventDefault();
-    };
-
-    ref.addEventListener('contextmenu', handleContextMenu);
-
-    return () => ref.removeEventListener('contextmenu', handleContextMenu);
-  }, []);
+  const contextMenuItems: ContextMenuItem[] = [
+    {
+      icon: 'tdesign:cut',
+      text: 'Cut',
+      shortcut: 'Ctrl + X',
+      onClick: onCut,
+    },
+    {
+      icon: 'tdesign:copy',
+      text: 'Copy',
+      shortcut: 'Ctrl + C',
+      onClick: onCopy,
+    },
+    {
+      icon: 'tdesign:paste',
+      text: 'Paste',
+      shortcut: 'Ctrl + V',
+      onClick: onPaste,
+    },
+    {
+      icon: 'tdesign:clear-formatting-1',
+      text: 'Clean',
+      shortcut: 'Del',
+      onClick: onCleanCells,
+    },
+  ];
 
   return (
     <div
-      onContextMenu={handleRightClick}
+      onContextMenu={openContextualMenu}
       ref={sheetRef}
       className={s['table-container']}
     >
@@ -136,6 +133,7 @@ export const Sheet: FC = () => {
                     [s.selected]: getRowIsSelected(rowNumber),
                   })}
                   style={{
+                    minHeight: `${ROW_MIN_HEIGHT}px`,
                     height: `${rowHeights[rowNumber.name] || ROW_DEFAULT_HEIGHT}px`,
                   }}
                 >
@@ -158,11 +156,8 @@ export const Sheet: FC = () => {
 
       {menuPosition && (
         <SheetContextualMenu
+          items={contextMenuItems}
           menuPosition={menuPosition}
-          onCopy={onCopy}
-          onCut={onCut}
-          onPaste={onPaste}
-          onClean={onCleanCells}
         />
       )}
     </div>

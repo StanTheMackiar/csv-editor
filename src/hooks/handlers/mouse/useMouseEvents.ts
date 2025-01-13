@@ -13,7 +13,7 @@ import {
   getCoordsInRank,
 } from '../../../helpers/sheet/sheet.helper';
 import { useSheetStore } from '../../../stores/useSheetStore';
-import { CellCoords, CellRef } from '../../../types/sheet/cell/cell.types';
+import { CellRef, Coords } from '../../../types/sheet/cell/cell.types';
 
 export const useMouseEvents = () => {
   const [
@@ -53,9 +53,9 @@ export const useMouseEvents = () => {
   const focusedCellInputRef = focusedCellInput?.current;
 
   const [selectionStartCoords, setSelectionStartCoords] =
-    useState<CellCoords | null>(null);
+    useState<Coords | null>(null);
   const [functionModeStartCoords, setFunctionModeStartCoords] =
-    useState<CellCoords | null>(null);
+    useState<Coords | null>(null);
 
   const handleGetCellRef = useCallback(
     (e: MouseEvent) => {

@@ -19,6 +19,7 @@ export const useCell = ({ cell }: CellProps) => {
     functionModeCells,
     focusedCell,
     recomputeSheet,
+    cuttedCellsCoords,
   ] = useSheetStore(
     useShallow((state) => {
       return [
@@ -33,9 +34,16 @@ export const useCell = ({ cell }: CellProps) => {
         state.functionModeCellsCoords,
         state.focusedCellCoords,
         state.recomputeSheet,
+        state.cuttedCellsCoords,
       ];
     })
   );
+
+  const cellIsCutted = useMemo(() => {
+    return cuttedCellsCoords.some(
+      (cuttedCell) => cuttedCell.x === cell.x && cuttedCell.y === cell.y
+    );
+  }, [cell.x, cell.y, cuttedCellsCoords]);
 
   const cellId = useMemo(
     () =>
@@ -141,6 +149,7 @@ export const useCell = ({ cell }: CellProps) => {
 
   return {
     cellId,
+    cellIsCutted,
     functionModeCell,
     html,
     inputFocused,

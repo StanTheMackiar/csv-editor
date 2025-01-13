@@ -1,47 +1,17 @@
+import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
+import { Icon } from '@iconify/react/dist/iconify.js';
 import { FC } from 'react';
 
 interface Props {
   menuPosition: { x: number; y: number };
-  onCopy: VoidFunction;
-  onCut: VoidFunction;
-  onPaste: VoidFunction;
-  onClean: VoidFunction;
+  items: ContextMenuItem[];
 }
 
-export const SheetContextualMenu: FC<Props> = ({
-  menuPosition,
-  onCopy,
-  onCut,
-  onPaste,
-  onClean,
-}) => {
+export const SheetContextualMenu: FC<Props> = ({ menuPosition, items }) => {
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
   };
-
-  const contextMenuItems: ContextMenuItem[] = [
-    {
-      text: 'Cortar',
-      shortcut: 'Ctrl + X',
-      onClick: onCut,
-    },
-    {
-      text: 'Copiar',
-      shortcut: 'Ctrl + C',
-      onClick: onCopy,
-    },
-    {
-      text: 'Pegar',
-      shortcut: 'Ctrl + V',
-      onClick: onPaste,
-    },
-    {
-      text: 'Limpiar selección',
-      shortcut: 'Del',
-      onClick: onClean,
-    },
-  ];
 
   return (
     <div
@@ -49,24 +19,24 @@ export const SheetContextualMenu: FC<Props> = ({
       className="absolute z-20 bg-white border rounded shadow-lg"
       style={{ left: `${menuPosition.x}px`, top: `${menuPosition.y}px` }}
     >
-      <ul className="p-2 min-w-80">
-        {contextMenuItems.map((element) => (
+      <ul className="p-2 min-w-60">
+        {items.map((item) => (
           <li
-            key={element.text}
-            onClick={element.onClick}
+            key={item.text}
+            onClick={item.onClick}
             className="p-2 hover:bg-gray-200 cursor-pointer flex justify-between"
           >
-            <span className="font-thin text-gray-800">{element.text}</span>
-            <span className="font-bold text-gray-600">{element.shortcut}</span>
+            <div className="flex gap-3 items-center">
+              <Icon icon={item.icon} className="text-lg" />
+              <span className="font-normal text-gray-800">{item.text}</span>
+            </div>
+
+            <span className="font-medium italic text-gray-600">
+              {item.shortcut}
+            </span>
           </li>
         ))}
       </ul>
     </div>
   );
 };
-
-interface ContextMenuItem {
-  text: string;
-  shortcut: string;
-  onClick: VoidFunction;
-}

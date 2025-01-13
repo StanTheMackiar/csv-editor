@@ -12,6 +12,7 @@ export interface CellProps {
 export const Cell: FC<CellProps> = (props) => {
   const {
     cellId,
+    cellIsCutted,
     functionModeCell,
     html,
     inputFocused,
@@ -56,14 +57,15 @@ export const Cell: FC<CellProps> = (props) => {
           'pointer-events-none': !inputFocused,
         })}
         style={{
-          ...(functionModeCell
-            ? {
-                border: functionModeCell
-                  ? `1px ${functionModeCell.color} dashed`
-                  : undefined,
-                backgroundColor: `${functionModeCell.color}05`,
-              }
-            : {}),
+          ...(functionModeCell && {
+            outline: functionModeCell
+              ? `2px ${functionModeCell.color} dashed`
+              : undefined,
+            backgroundColor: `${functionModeCell.color}05`,
+          }),
+          ...(cellIsCutted && {
+            outline: '2px #9fa4ec dashed',
+          }),
         }}
         html={html}
       />

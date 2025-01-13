@@ -2,13 +2,13 @@
 import { RefObject } from 'react';
 import { Direction } from '../../stores/useSheetStore';
 import {
-  CellCoords,
+  Coords,
   ICell,
   ICellSpecial,
   ISheet,
 } from '../../types/sheet/cell/cell.types';
 
-export const getCell = (coords: CellCoords, sheet: ISheet) => {
+export const getCell = (coords: Coords, sheet: ISheet) => {
   if (
     coords.y < 0 ||
     coords.y >= sheet.length ||
@@ -84,7 +84,7 @@ export const getLetterFromXCoord = (x: number): string => {
   return letter;
 };
 
-export const getCellId = ({ x, y }: CellCoords) => {
+export const getCellId = ({ x, y }: Coords) => {
   const letter = getLetterFromXCoord(x);
   const number = getNumberFromYCoord(y);
 
@@ -167,9 +167,9 @@ export const getCellFromInputRef = (
 };
 
 export const getCoordsInRank = (
-  start: string | CellCoords,
-  end: string | CellCoords
-): CellCoords[] => {
+  start: string | Coords,
+  end: string | Coords
+): Coords[] => {
   const startCoords = typeof start === 'string' ? getCoordsById(start) : start;
   const endCoords = typeof end === 'string' ? getCoordsById(end) : end;
 
@@ -179,7 +179,7 @@ export const getCoordsInRank = (
   const endX = Math.max(startCoords.x, endCoords.x);
   const endY = Math.max(startCoords.y, endCoords.y);
 
-  const cells: CellCoords[] = [];
+  const cells: Coords[] = [];
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
@@ -192,9 +192,9 @@ export const getCoordsInRank = (
 
 export const getCoordsByDirection = (
   dir: Direction,
-  coords: CellCoords
-): CellCoords => {
-  const coordsMap: Record<Direction, CellCoords> = {
+  coords: Coords
+): Coords => {
+  const coordsMap: Record<Direction, Coords> = {
     up: {
       x: coords.x,
       y: coords.y - 1,

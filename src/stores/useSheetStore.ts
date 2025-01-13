@@ -14,48 +14,50 @@ import {
   getCoordsInRank,
 } from '../helpers/sheet/sheet.helper';
 import {
-  CellCoords,
+  Coords,
   FunctionModeCell,
   ICell,
 } from '../types/sheet/cell/cell.types';
 
-export type UpdateCellData = { coords: CellCoords; newValue: string };
+export type UpdateCellData = { coords: Coords; newValue: string };
 export type Direction = 'left' | 'up' | 'down' | 'right';
 interface State {
   colsQty: number;
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
   rowsQty: number;
-  remarkedCellCoords: CellCoords | null;
+  remarkedCellCoords: Coords | null;
   remarkedCellInputRef: RefObject<HTMLDivElement> | null;
-  focusedCellCoords: CellCoords | null;
+  focusedCellCoords: Coords | null;
   focusedCellInputRef: RefObject<HTMLDivElement> | null;
   functionMode: boolean;
-  selectedCellsCoords: CellCoords[];
-  latestSelectedCellCoords: CellCoords | null;
+  selectedCellsCoords: Coords[];
+  latestSelectedCellCoords: Coords | null;
   functionModeCellsCoords: FunctionModeCell[];
+  cuttedCellsCoords: Coords[];
   sheet: ICell[][];
 }
 
 interface Actions {
-  addCellsToSelection: (coords: CellCoords) => void;
+  addCellsToSelection: (coords: Coords) => void;
   moveRemarkedCell: (direction: Direction) => void;
-  setFocusedCellCoords: (coords: CellCoords | null) => void;
+  setFocusedCellCoords: (coords: Coords | null) => void;
   setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setIsSelecting: (value: boolean) => void;
-  setRemarkedCellCoords: (coords: CellCoords | null) => void;
-  setSelectedCellsCoords: (coords: CellCoords[]) => void;
+  setRemarkedCellCoords: (coords: Coords | null) => void;
+  setSelectedCellsCoords: (coords: Coords[]) => void;
   setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
   setIsSelectingFunctionMode: (value: boolean) => void;
   moveLatestSelectedCell: (direction: Direction) => void;
   recomputeSheet: () => void;
   setFunctionMode: (value: boolean) => void;
-  setLatestSelectedCellCoords: (coords: CellCoords | null) => void;
-  selectCells: (startCellCoords: CellCoords, endCellCoords: CellCoords) => void;
+  setLatestSelectedCellCoords: (coords: Coords | null) => void;
+  selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
   unmarkSelectedCells: VoidFunction;
   updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
   cleanSelectedCellsContent: VoidFunction;
+  setCuttedCellsCoords: (coords: Coords[]) => void;
 }
 
 export const defaultState: State = {
@@ -72,6 +74,7 @@ export const defaultState: State = {
   remarkedCellInputRef: null,
   selectedCellsCoords: [],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
+  cuttedCellsCoords: [],
 };
 
 export const useSheetStore = create<State & Actions>((set, get) => ({
@@ -235,4 +238,6 @@ export const useSheetStore = create<State & Actions>((set, get) => ({
       selectedCellsCoords.map((coords) => ({ coords, newValue: '' }))
     );
   },
+
+  setCuttedCellsCoords: (coords) => set({ cuttedCellsCoords: coords }),
 }));

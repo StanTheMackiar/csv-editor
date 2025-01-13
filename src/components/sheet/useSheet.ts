@@ -8,7 +8,7 @@ import {
 } from '@/helpers/sheet/sheet.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
 import {
-  CellCoords,
+  Coords,
   FunctionModeCell,
   ICellSpecial,
 } from '@/types/sheet/cell/cell.types';
@@ -88,7 +88,7 @@ export const useSheet = () => {
   const sheetNumbers = useMemo(() => getSheetNumbers(rowsQty), [rowsQty]);
 
   const onClickColumn = (col: ICellSpecial) => {
-    const columnsFound: CellCoords[] = sheet
+    const columnsFound: Coords[] = sheet
       .flat()
       .filter((cell) => cell.x === col.coord)
       .map((cell) => ({ x: cell.x, y: cell.y }));
@@ -97,7 +97,7 @@ export const useSheet = () => {
   };
 
   const onClickRow = (row: ICellSpecial) => {
-    const rowsFound: CellCoords[] = sheet
+    const rowsFound: Coords[] = sheet
       .flat()
       .filter((cell) => cell.y === row.coord)
       .map((cell) => ({ x: cell.x, y: cell.y }));

@@ -2,6 +2,7 @@ import {
   COLUMN_DEFAULT_WIDTH,
   COLUMN_MIN_WIDTH,
   ROW_DEFAULT_HEIGHT,
+  ROW_MIN_HEIGHT,
 } from '@/helpers/constants/sheet-config.helper';
 import { useCallback, useState } from 'react';
 import s from './Sheet.module.css';
@@ -50,7 +51,7 @@ export const useSheetRedimension = () => {
 
       const handleMouseMove = (e: MouseEvent) => {
         const newHeight = Math.max(
-          ROW_DEFAULT_HEIGHT,
+          ROW_MIN_HEIGHT,
           startHeight + (e.pageY - startY)
         );
         setRowHeights((prev) => ({

@@ -14,6 +14,8 @@ export const useClipboardEvents = () => {
     setSelectedCells,
     sheet,
     recomputeSheet,
+    cuttedCellsCoords,
+    setCuttedCellsCoords,
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
@@ -22,6 +24,8 @@ export const useClipboardEvents = () => {
       state.setSelectedCellsCoords,
       state.sheet,
       state.recomputeSheet,
+      state.cuttedCellsCoords,
+      state.setCuttedCellsCoords,
     ])
   );
 
@@ -74,7 +78,7 @@ export const useClipboardEvents = () => {
       const clipboardText = getClipboardText();
       await copy(clipboardText);
 
-      updateCells(selectedCells.map((coords) => ({ coords, newValue: '' })));
+      setCuttedCellsCoords(selectedCells);
       recomputeSheet();
     },
     [
@@ -83,7 +87,7 @@ export const useClipboardEvents = () => {
       getClipboardText,
       recomputeSheet,
       selectedCells,
-      updateCells,
+      setCuttedCellsCoords,
     ]
   );
 
@@ -119,14 +123,23 @@ export const useClipboardEvents = () => {
         newCells.map(({ coords }) => ({ x: coords.x, y: coords.y }))
       );
 
-      updateCells(newCells);
+      const cellsToClean = cuttedCellsCoords.map((coords) => ({
+        coords,
+        newValue: '',
+      }));
+
+      setCuttedCellsCoords([]);
+      updateCells([...cellsToClean, ...newCells]);
+
       recomputeSheet();
     },
     [
+      cuttedCellsCoords,
       focusedElement,
       paste,
       recomputeSheet,
       selectedCells,
+      setCuttedCellsCoords,
       setSelectedCells,
       updateCells,
     ]
