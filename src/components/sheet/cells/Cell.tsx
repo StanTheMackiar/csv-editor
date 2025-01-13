@@ -10,9 +10,8 @@ export interface CellProps {
 }
 
 export const Cell: FC<CellProps> = (props) => {
-  const { cell } = props;
-
   const {
+    cellId,
     functionModeCell,
     html,
     inputFocused,
@@ -32,7 +31,7 @@ export const Cell: FC<CellProps> = (props) => {
     <td
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      id={`${cell.id}-cell`}
+      id={`${cellId}-cell`}
       className={clsx(s['sheet-cell'])}
     >
       <div
@@ -48,7 +47,7 @@ export const Cell: FC<CellProps> = (props) => {
         onBlur={handleBlur}
         onFocus={onFocus}
         innerRef={inputRef}
-        id={`${cell.id}-cellinput`}
+        id={`${cellId}-cellinput`}
         onChange={onChange}
         className={clsx(s['sheet-input'], {
           [s['cell-shadow']]: isShadowed,
@@ -66,7 +65,7 @@ export const Cell: FC<CellProps> = (props) => {
               }
             : {}),
         }}
-        html={inputFocused ? html : cell.computedValue}
+        html={html}
       />
     </td>
   );

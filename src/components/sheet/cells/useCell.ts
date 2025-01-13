@@ -1,4 +1,5 @@
 import { ContentEditableEvent } from '@/components/core/input/ContentEditable';
+import { getCellId } from '@/helpers';
 import { parseTextToHTML } from '@/helpers/change-cell.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { FocusEventHandler, useEffect, useMemo, useRef } from 'react';
@@ -22,29 +23,36 @@ export const useCell = ({ cell }: CellProps) => {
     useShallow((state) => {
       return [
         state.updateCells,
-        state.selectedCells,
-        state.remarkedCell,
-        state.setFocusedCell,
+        state.selectedCellsCoords,
+        state.remarkedCellCoords,
+        state.setFocusedCellCoords,
         state.setFocusedCellInputRef,
         state.setRemarkedCellInputRef,
         state.functionMode,
         state.setFunctionMode,
-        state.functionModeCells,
-        state.focusedCell,
+        state.functionModeCellsCoords,
+        state.focusedCellCoords,
         state.recomputeSheet,
       ];
     })
   );
 
+  const cellId = useMemo(
+    () =>
+      getCellId({
+        x: cell.x,
+        y: cell.y,
+      }),
+    [cell.x, cell.y]
+  );
+
   const functionModeCell = functionModeCells.find(
     (funcCell) => funcCell.coords.x === cell.x && funcCell.coords.y === cell.y
   );
-
   const inputFocused = focusedCell?.x === cell.x && focusedCell?.y === cell.y;
+  const isFunctionMode = functionMode && inputFocused;
 
   const inputRef = useRef<HTMLDivElement>(null);
-
-  const isFunctionMode = functionMode && inputFocused;
 
   const isSelected = useMemo(
     () =>
@@ -66,10 +74,11 @@ export const useCell = ({ cell }: CellProps) => {
 
   useEffect(() => {
     if (!inputFocused) return;
+
     const enableFuncMode = cell.value.startsWith('=');
 
     setFunctionMode(enableFuncMode);
-  }, [cell.value, inputFocused, setFunctionMode]);
+  }, [cell.value, inputFocused, setFocusedCellRef, setFunctionMode]);
 
   useEffect(() => {
     if (isRemarked) setRemarkedCellRef(inputRef);
@@ -99,29 +108,39 @@ export const useCell = ({ cell }: CellProps) => {
 
   const onChange = (e: ContentEditableEvent) => {
     const text = (e.currentTarget.textContent as string) ?? '';
-    const enableFuncMode = text.startsWith('=');
 
-    setFunctionMode(enableFuncMode);
-
-    updateCells([
-      {
-        coords: {
-          x: cell.x,
-          y: cell.y,
+    updateCells(
+      [
+        {
+          coords: {
+            x: cell.x,
+            y: cell.y,
+          },
+          newValue: text,
         },
-        newValue: text,
-      },
-    ]);
+      ],
+      false
+    );
   };
-
-  const html = parseTextToHTML(String(cell.value));
 
   const onClick = () => {
     // eslint-disable-next-line no-console
-    // console.log(cell);
+    console.info(cell);
   };
 
+  const html = useMemo<string>(() => {
+    const cellHasFunction = cell.value.startsWith('=');
+
+    const parsedValue = parseTextToHTML(String(cell.value));
+    const { value, computedValue } = cell;
+
+    if (inputFocused) return parsedValue;
+    if (cellHasFunction) return computedValue || value;
+    else return value;
+  }, [cell, inputFocused]);
+
   return {
+    cellId,
     functionModeCell,
     html,
     inputFocused,

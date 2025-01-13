@@ -1,7 +1,6 @@
 export * from './change-cell.helper';
 export * from './color.helper';
 export * from './comparators.helper';
-export * from './constants/alphabet';
 export * from './constants/os';
 export * from './constants/regex.constans';
 export * from './get-text-cursor-position.helper';

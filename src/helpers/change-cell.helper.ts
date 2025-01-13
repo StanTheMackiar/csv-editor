@@ -17,9 +17,7 @@ const parseCellReferences = (text: string) => {
 export const parseTextToHTML = (text: string) => {
   const enableFuncMode = text.startsWith('=');
 
-  const newValue = enableFuncMode
-    ? parseCellReferences(text)
-    : text.replaceAll('\n', '');
+  const newValue = enableFuncMode ? parseCellReferences(text) : text;
 
   return newValue;
 };

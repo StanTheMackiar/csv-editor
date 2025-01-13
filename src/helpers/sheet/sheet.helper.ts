@@ -7,11 +7,86 @@ import {
   ICellSpecial,
   ISheet,
 } from '../../types/sheet/cell/cell.types';
-import { alphabet } from '../constants/alphabet';
 
-export const getCellId = (x: number, y: number) => {
-  const letter = alphabet[x];
-  const number = y + 1;
+export const getCell = (coords: CellCoords, sheet: ISheet) => {
+  if (
+    coords.y < 0 ||
+    coords.y >= sheet.length ||
+    coords.x < 0 ||
+    coords.x >= sheet[coords.y]?.length
+  ) {
+    throw new Error('Cell coordinates out of bounds');
+  }
+
+  return sheet[coords.y][coords.x];
+};
+
+export const getCoordsById = (
+  cellId: string
+): {
+  x: number;
+  y: number;
+} => {
+  // Validar el formato de la celda
+  const match = cellId.match(/^([A-Z]+)(\d+)$/);
+
+  if (!match) {
+    throw new Error(
+      'Invalid cell ID format. Must be in the format "LetterNumber" (e.g., A1, BA12).'
+    );
+  }
+
+  const [, letter, number] = match;
+
+  // Convertir letra a coordenada x y número a coordenada y
+  const x = getXCoordFromLetter(letter);
+  const y = getYCoordFromNumber(number);
+
+  return {
+    x, // Coordenada X basada en la letra
+    y, // Coordenada Y basada en el número
+  };
+};
+
+export const getYCoordFromNumber = (numberStr: string): number => {
+  const numParsed = Number(numberStr.trim());
+  if (isNaN(numParsed)) throw new Error('numberStr must be a number');
+  if (numParsed <= 0) throw new Error('numberStr must be greater than 0');
+  return numParsed - 1;
+};
+
+export const getXCoordFromLetter = (letter: string): number => {
+  let x = 0;
+
+  for (let i = 0; i < letter.length; i++) {
+    const charCode = letter.charCodeAt(i) - 65; // 'A' es 65
+    x = x * 26 + (charCode + 1); // Suma 1 porque 'A' debe ser 1, no 0
+  }
+
+  return x - 1; // Resta 1 porque las coordenadas comienzan desde 0
+};
+
+export const getNumberFromYCoord = (y: number): number => {
+  return y + 1;
+};
+
+export const getLetterFromXCoord = (x: number): string => {
+  if (x < 0) throw new Error('x must be greater than 0');
+
+  let letter = '';
+  let i = x;
+
+  while (i >= 0) {
+    letter = String.fromCharCode((i % 26) + 65) + letter;
+    i = Math.floor(i / 26) - 1;
+  }
+
+  return letter;
+};
+
+export const getCellId = ({ x, y }: CellCoords) => {
+  const letter = getLetterFromXCoord(x);
+  const number = getNumberFromYCoord(y);
 
   return `${letter}${number}`;
 };
@@ -20,8 +95,6 @@ export const createSheet = (rowsQty: number, colsQty: number): ISheet =>
   Array.from({ length: rowsQty }, (_, y) =>
     Array.from({ length: colsQty }, (_, x) => {
       return {
-        computedValue: ``,
-        id: getCellId(x, y),
         value: ``,
         x,
         y,
@@ -30,16 +103,16 @@ export const createSheet = (rowsQty: number, colsQty: number): ISheet =>
   );
 
 export const getSheetLetters = (colsQty: number): ICellSpecial[] => {
-  return Array.from({ length: colsQty }, (_, i) => ({
-    name: alphabet[i],
-    value: i,
+  return Array.from({ length: colsQty }, (_, x) => ({
+    name: getLetterFromXCoord(x).toString(),
+    coord: x,
   }));
 };
 
 export const getSheetNumbers = (rowsQty: number): ICellSpecial[] => {
-  return Array.from({ length: rowsQty }, (_, i) => ({
-    name: String(i + 1),
-    value: i,
+  return Array.from({ length: rowsQty }, (_, y) => ({
+    name: getNumberFromYCoord(y).toString(),
+    coord: y,
   }));
 };
 
@@ -75,7 +148,8 @@ export const getCellFromMouseEvent = (sheet: ISheet, e: any): ICell | null => {
 export const getCellFromId = (sheet: ISheet, cellId?: string): ICell | null => {
   if (!cellId) return null;
 
-  const cell = sheet.flat().find((cell) => cell.id === cellId) ?? null;
+  const coords = getCoordsById(cellId);
+  const cell = getCell(coords, sheet);
 
   return cell;
 };
@@ -87,87 +161,60 @@ export const getCellFromInputRef = (
   if (!inputRef?.current) return null;
 
   const [cellId] = inputRef?.current.id.split('-');
-
   if (!cellId) return null;
 
-  const cell = sheet.flat().find((cell) => cell.id === cellId) ?? null;
-
-  return cell;
+  return getCellFromId(sheet, cellId);
 };
 
-export const extractCoordsFromId = (cellId: string): CellCoords => {
-  const col = cellId.match(/[A-Z]+/g)?.[0] ?? '';
-  const row = cellId.match(/\d+/g)?.[0] ?? '';
-
-  const x = col.charCodeAt(0) - 'A'.charCodeAt(0);
-  const y = parseInt(row, 10) - 1;
-
-  return { x, y };
-};
-
-export const extractCells = (
-  startId: string,
-  endId: string,
-  sheet: ISheet
+export const getCoordsInRank = (
+  start: string | CellCoords,
+  end: string | CellCoords
 ): CellCoords[] => {
-  const startCol = startId.match(/[A-Z]+/g)?.[0] ?? '';
-  const startRow = startId.match(/\d+/g)?.[0] ?? '';
+  const startCoords = typeof start === 'string' ? getCoordsById(start) : start;
+  const endCoords = typeof end === 'string' ? getCoordsById(end) : end;
 
-  const endCol = endId.match(/[A-Z]+/g)?.[0] ?? '';
-  const endRow = endId.match(/\d+/g)?.[0] ?? '';
+  const startX = Math.min(startCoords.x, endCoords.x);
+  const startY = Math.min(startCoords.y, endCoords.y);
 
-  const startCellX = startCol.charCodeAt(0) - 'A'.charCodeAt(0);
-  const startCellY = parseInt(startRow, 10) - 1;
-
-  const endCellX = endCol.charCodeAt(0) - 'A'.charCodeAt(0);
-  const endCellY = parseInt(endRow, 10) - 1;
-
-  const startX = Math.min(startCellX, endCellX);
-  const startY = Math.min(startCellY, endCellY);
-
-  const endX = Math.max(startCellX, endCellX);
-  const endY = Math.max(startCellY, endCellY);
+  const endX = Math.max(startCoords.x, endCoords.x);
+  const endY = Math.max(startCoords.y, endCoords.y);
 
   const cells: CellCoords[] = [];
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      const cell = sheet[y]?.[x];
-      if (cell) cells.push({ x, y });
+      cells.push({ x, y });
     }
   }
 
   return cells;
 };
 
-export const getCellByDirection = (
+export const getCoordsByDirection = (
   dir: Direction,
-  cellCoords: CellCoords,
-  sheet: ISheet
-): CellCoords | undefined => {
-  const cell = sheet[cellCoords.y][cellCoords.x];
-
-  const coordsMap: Record<Direction, { x: number; y: number }> = {
+  coords: CellCoords
+): CellCoords => {
+  const coordsMap: Record<Direction, CellCoords> = {
     up: {
-      x: cell.x,
-      y: cell.y - 1,
+      x: coords.x,
+      y: coords.y - 1,
     },
     down: {
-      x: cell.x,
-      y: cell.y + 1,
+      x: coords.x,
+      y: coords.y + 1,
     },
     right: {
-      x: cell.x + 1,
-      y: cell.y,
+      x: coords.x + 1,
+      y: coords.y,
     },
     left: {
-      x: cell.x - 1,
-      y: cell.y,
+      x: coords.x - 1,
+      y: coords.y,
     },
   };
-  const coords = coordsMap[dir];
-  const positionX = Math.max(coords.x, 0);
-  const positionY = Math.max(coords.y, 0);
+  const newCoords = coordsMap[dir];
+  const positionX = Math.max(newCoords.x, 0);
+  const positionY = Math.max(newCoords.y, 0);
 
   return {
     x: positionX,

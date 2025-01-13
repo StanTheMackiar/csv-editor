@@ -1,13 +1,12 @@
 export interface ICell {
-  computedValue: string;
-  id: string;
+  computedValue?: string;
   value: string;
   x: number;
   y: number;
 }
 
 export type ICellSpecial = {
-  value: number;
+  coord: number;
   name: string;
 };
 
@@ -27,19 +26,10 @@ export type CellRef = {
 };
 
 export type ParseExpressionReturn = {
-  isMathExp: boolean;
-  cellsFound: CellFound[];
-  refsFound: CellRef[];
-  parsedExp: string;
+  coords: CellCoords[];
+  refs: CellRef[];
   isFunction: boolean;
-};
-
-export type CellState = {
-  value: string;
-  x: number;
-  y: number;
-  id: string;
-  setValue: (value: string) => void;
+  parsedExp: string;
 };
 
 export type CellCoords = {

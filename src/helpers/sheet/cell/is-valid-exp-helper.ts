@@ -1,4 +1,4 @@
-export const isValidExcelExpression = (expression: string): boolean => {
+export const isValidFuncExpression = (expression: string): boolean => {
   if (!expression) return true;
   if (!expression.startsWith('=')) return true;
 

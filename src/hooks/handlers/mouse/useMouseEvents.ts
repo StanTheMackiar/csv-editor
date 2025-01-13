@@ -7,19 +7,16 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
-  extractCells,
+  getCell,
   getCellFromMouseEvent,
+  getCellId,
+  getCoordsInRank,
 } from '../../../helpers/sheet/sheet.helper';
 import { useSheetStore } from '../../../stores/useSheetStore';
-import {
-  CellCoords,
-  CellRef,
-  ICell,
-} from '../../../types/sheet/cell/cell.types';
+import { CellCoords, CellRef } from '../../../types/sheet/cell/cell.types';
 
 export const useMouseEvents = () => {
   const [
-    focusedCell,
     updateCells,
     focusedCellInput,
     addCellsToSelection,
@@ -27,32 +24,27 @@ export const useMouseEvents = () => {
     isSelecting,
     remarkedCellCoords,
     selectCells,
-    selectedCells,
+    selectedCellsCoords,
     setIsSelecting,
-    setLatestSelectedCell,
-    setRemarkedCell,
-    setSelectedCells,
+    setRemarkedCellCoords,
+    setSelectedCellsCoords,
     sheet,
-    unmarkSelectedCells,
     isSelectingFunctionMode,
     setIsSelectingFunctionMode,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCell,
       state.updateCells,
       state.focusedCellInputRef,
       state.addCellsToSelection,
       state.functionMode,
       state.isSelecting,
-      state.remarkedCell,
+      state.remarkedCellCoords,
       state.selectCells,
-      state.selectedCells,
+      state.selectedCellsCoords,
       state.setIsSelecting,
-      state.setLatestSelectedCell,
-      state.setRemarkedCell,
-      state.setSelectedCells,
+      state.setRemarkedCellCoords,
+      state.setSelectedCellsCoords,
       state.sheet,
-      state.unmarkSelectedCells,
       state.isSelectingFunctionMode,
       state.setIsSelectingFunctionMode,
     ])
@@ -60,48 +52,109 @@ export const useMouseEvents = () => {
 
   const focusedCellInputRef = focusedCellInput?.current;
 
-  const [startSelectionCoords, setStartSelectionCoords] =
+  const [selectionStartCoords, setSelectionStartCoords] =
     useState<CellCoords | null>(null);
-  const [startCellInFunctionMode, setStartCellInFunctionMode] =
-    useState<ICell | null>(null);
+  const [functionModeStartCoords, setFunctionModeStartCoords] =
+    useState<CellCoords | null>(null);
 
-  const handleMouseDown = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e: any) => {
-      const allowedButtons = [0, 2];
+  const handleGetCellRef = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault();
 
-      if (e.button === 2) e.preventDefault();
+      const clickedCell = getCellFromMouseEvent(sheet, e);
+      if (!clickedCell) return;
 
-      if (!allowedButtons.includes(e.button)) {
+      const clickedCellId = clickedCell && getCellId(clickedCell);
+      const remarkedCell =
+        remarkedCellCoords && getCell(remarkedCellCoords, sheet);
+
+      if (!isSelectingFunctionMode) {
+        setIsSelectingFunctionMode(true);
+        setFunctionModeStartCoords(clickedCell);
+      }
+
+      if (!remarkedCell || !focusedCellInputRef)
+        throw new Error('Cell not found');
+
+      const { refs: refsFound } = parseExpression(remarkedCell.value, sheet);
+
+      const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
+      if (!cursorPosition) return;
+
+      const lastRefFound: CellRef | undefined =
+        refsFound?.[refsFound.length - 1];
+
+      const shouldReplaceRef = lastRefFound
+        ? isBetween(cursorPosition, lastRefFound.start, lastRefFound.end)
+        : undefined;
+
+      const cursorIsAtEnd = cursorPosition === remarkedCell.value.length;
+
+      const shouldAddRef = !shouldReplaceRef && cursorIsAtEnd;
+
+      if (shouldAddRef) {
+        remarkedCell.value = parseHTMLToText(
+          remarkedCell.value + clickedCellId
+        );
+      } else if (shouldReplaceRef) {
+        const newValue = remarkedCell.value.replace(
+          lastRefFound.ref,
+          clickedCellId
+        );
+        remarkedCell.value = parseHTMLToText(newValue);
+      } else {
+        focusedCellInputRef?.blur();
+
         return;
       }
 
-      const targetCell = focusedCell
-        ? sheet[focusedCell?.y]?.[focusedCell?.x]
-        : undefined;
+      updateCells([
+        {
+          coords: {
+            x: remarkedCell.x,
+            y: remarkedCell.y,
+          },
+          newValue: remarkedCell.value,
+        },
+      ]);
+    },
+    [
+      focusedCellInputRef,
+      isSelectingFunctionMode,
+      remarkedCellCoords,
+      setIsSelectingFunctionMode,
+      sheet,
+      updateCells,
+    ]
+  );
+
+  const handleMouseDown = useCallback(
+    (e: MouseEvent) => {
+      const leftClicked = e.button === 0;
+      const rightClicked = e.button === 2;
+
+      if (!rightClicked && !leftClicked) return;
+
+      const remarkedCell =
+        remarkedCellCoords && getCell(remarkedCellCoords, sheet);
 
       const clickedCell = getCellFromMouseEvent(sheet, e);
 
-      if (!clickedCell) {
-        if (focusedCellInputRef) return;
+      if (!clickedCell) return;
 
-        setLatestSelectedCell(null);
-        setRemarkedCell(null);
-        unmarkSelectedCells();
-        setIsSelecting(false);
-        setStartSelectionCoords(clickedCell);
+      const clickeCellInSelectedCells = selectedCellsCoords.some(
+        ({ x, y }) => x === clickedCell.x && y === clickedCell.y
+      );
 
-        return;
-      }
+      if (clickeCellInSelectedCells && rightClicked) return;
 
-      const isUniqueSelected = selectedCells.length === 1;
+      const clickedCellId = getCellId(clickedCell);
+      const remarkedCellId = remarkedCell && getCellId(remarkedCell);
 
-      const remarkedCell = remarkedCellCoords
-        ? sheet[remarkedCellCoords?.y]?.[remarkedCellCoords?.x]
-        : undefined;
+      const isUniqueSelected = selectedCellsCoords.length === 1;
 
       const clickedRemarkedCell =
-        isUniqueSelected && remarkedCell?.id === clickedCell?.id;
+        isUniqueSelected && remarkedCellId === clickedCellId;
 
       const allowGetCellRef =
         functionMode &&
@@ -110,57 +163,7 @@ export const useMouseEvents = () => {
         !isSelectingFunctionMode;
 
       if (allowGetCellRef) {
-        e.preventDefault();
-
-        if (!isSelectingFunctionMode) {
-          setIsSelectingFunctionMode(true);
-          setStartCellInFunctionMode(clickedCell);
-        }
-
-        if (!targetCell || !focusedCellInputRef)
-          throw new Error('Cell not found');
-
-        const { refsFound } = parseExpression(targetCell.value, sheet);
-
-        const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
-        if (!cursorPosition) return;
-
-        const lastRefFound: CellRef | undefined =
-          refsFound?.[refsFound.length - 1];
-
-        const shouldReplaceRef = lastRefFound
-          ? isBetween(cursorPosition, lastRefFound.start, lastRefFound.end)
-          : undefined;
-
-        const cursorIsAtEnd = cursorPosition === targetCell.value.length;
-
-        const shouldAddRef = !shouldReplaceRef && cursorIsAtEnd;
-
-        if (shouldAddRef) {
-          targetCell.value = parseHTMLToText(targetCell.value + clickedCell.id);
-        } else if (shouldReplaceRef) {
-          const newValue = targetCell.value.replace(
-            lastRefFound.ref,
-            clickedCell.id
-          );
-          targetCell.value = parseHTMLToText(newValue);
-        } else {
-          focusedCellInputRef?.blur();
-
-          return;
-        }
-
-        updateCells([
-          {
-            coords: {
-              x: targetCell.x,
-              y: targetCell.y,
-            },
-            newValue: targetCell.value,
-          },
-        ]);
-
-        return;
+        return handleGetCellRef(e);
       }
 
       if (clickedRemarkedCell) {
@@ -169,43 +172,34 @@ export const useMouseEvents = () => {
         return;
       }
 
-      const clickedCellCoors = {
+      const clickedCellCoords = {
         x: clickedCell.x,
         y: clickedCell.y,
       };
 
       if (!isSelecting) {
         setIsSelecting(true);
-        setRemarkedCell(clickedCellCoors);
-        setSelectedCells([clickedCellCoors]);
-        setLatestSelectedCell(null);
-        setStartSelectionCoords({
-          x: clickedCell.x,
-          y: clickedCell.y,
-        });
+        setRemarkedCellCoords(clickedCellCoords);
+        setSelectedCellsCoords([clickedCellCoords]);
+        setSelectionStartCoords(clickedCellCoords);
 
         return;
       }
 
-      addCellsToSelection(clickedCellCoors);
+      addCellsToSelection(clickedCellCoords);
     },
     [
       addCellsToSelection,
-      focusedCell,
-      focusedCellInputRef,
       functionMode,
+      handleGetCellRef,
       isSelecting,
       isSelectingFunctionMode,
       remarkedCellCoords,
-      selectedCells.length,
+      selectedCellsCoords,
       setIsSelecting,
-      setIsSelectingFunctionMode,
-      setLatestSelectedCell,
-      setRemarkedCell,
-      setSelectedCells,
+      setRemarkedCellCoords,
+      setSelectedCellsCoords,
       sheet,
-      unmarkSelectedCells,
-      updateCells,
     ]
   );
 
@@ -216,39 +210,35 @@ export const useMouseEvents = () => {
 
       if (
         isSelectingFunctionMode &&
-        startCellInFunctionMode &&
+        functionModeStartCoords &&
         remarkedCellCoords
       ) {
-        const selectedCells = extractCells(
-          startCellInFunctionMode.id,
-          currentCell.id,
-          sheet
+        const selectedCells = getCoordsInRank(
+          functionModeStartCoords,
+          currentCell
         );
 
         const firstCellCoords = selectedCells?.[0];
         const latestCellCoords = selectedCells?.[selectedCells.length - 1];
 
-        const firstCell = sheet[firstCellCoords.y]?.[firstCellCoords.x];
-        const latestCell = sheet[latestCellCoords.y]?.[latestCellCoords.x];
+        const firstCellId = getCellId(firstCellCoords);
+        const latestCellId = getCellId(latestCellCoords);
+        const functionModeStartId = getCellId(functionModeStartCoords);
 
-        const isRange = firstCell !== latestCell;
+        const isRange = firstCellId !== latestCellId;
 
         const cellNewRef = isRange
-          ? `${firstCell?.id}:${latestCell?.id}`
-          : startCellInFunctionMode.id;
+          ? `${firstCellId}:${latestCellId}`
+          : functionModeStartId;
 
-        const targetCell = focusedCell
-          ? sheet[focusedCell?.y]?.[focusedCell?.x]
-          : undefined;
+        const remarkedCell = getCell(remarkedCellCoords, sheet);
 
-        if (!targetCell) throw new Error('Cell not found');
-
-        const { refsFound } = parseExpression(targetCell.value, sheet);
+        const { refs } = parseExpression(remarkedCell.value, sheet);
         const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
 
         if (!cursorPosition) throw new Error('Cursor position not found');
 
-        const lastRefFound = refsFound[refsFound.length - 1];
+        const lastRefFound = refs[refs.length - 1];
 
         const lastRefIsHover = isBetween(
           cursorPosition,
@@ -256,16 +246,16 @@ export const useMouseEvents = () => {
           lastRefFound.end
         );
 
-        const cursorIsAtEnd = cursorPosition === targetCell.value.length;
+        const cursorIsAtEnd = cursorPosition === remarkedCell.value.length;
 
         if (!lastRefIsHover && cursorIsAtEnd) {
-          targetCell.value = parseHTMLToText(targetCell.value + cellNewRef);
+          remarkedCell.value = parseHTMLToText(remarkedCell.value + cellNewRef);
         } else if (lastRefIsHover) {
-          const newValue = targetCell.value.replace(
+          const newValue = remarkedCell.value.replace(
             lastRefFound.ref,
             cellNewRef
           );
-          targetCell.value = parseHTMLToText(newValue);
+          remarkedCell.value = parseHTMLToText(newValue);
         } else {
           focusedCellInputRef?.blur();
         }
@@ -273,31 +263,30 @@ export const useMouseEvents = () => {
         updateCells([
           {
             coords: {
-              x: targetCell.x,
-              y: targetCell.y,
+              x: remarkedCell.x,
+              y: remarkedCell.y,
             },
-            newValue: targetCell.value,
+            newValue: remarkedCell.value,
           },
         ]);
       }
 
-      if (isSelecting && startSelectionCoords) {
-        selectCells(startSelectionCoords, {
+      if (isSelecting && selectionStartCoords) {
+        selectCells(selectionStartCoords, {
           x: currentCell.x,
           y: currentCell.y,
         });
       }
     },
     [
-      focusedCell,
       focusedCellInputRef,
+      functionModeStartCoords,
       isSelecting,
       isSelectingFunctionMode,
       remarkedCellCoords,
       selectCells,
+      selectionStartCoords,
       sheet,
-      startCellInFunctionMode,
-      startSelectionCoords,
       updateCells,
     ]
   );

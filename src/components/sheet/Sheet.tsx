@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 
 import clsx from 'clsx';
 import { Cell } from './cells/Cell';
@@ -8,6 +8,8 @@ import {
   COLUMN_MIN_WIDTH,
   ROW_DEFAULT_HEIGHT,
 } from '@/helpers/constants/sheet-config.helper';
+import { useClipboardEvents } from '@/hooks';
+import { SheetContextualMenu } from './contextual-menu/SheetContextualMenu';
 import s from './Sheet.module.css';
 import { useSheet } from './useSheet';
 import { useSheetRedimension } from './useSheetRedimension';
@@ -21,6 +23,7 @@ export const Sheet: FC = () => {
 
     getColIsSelected,
     getRowIsSelected,
+    onCleanCells,
     onClickAll,
     onClickColumn,
     onClickRow,
@@ -29,8 +32,54 @@ export const Sheet: FC = () => {
   const { columnWidths, rowHeights, resizeColumnWidth, resizeRowHeight } =
     useSheetRedimension();
 
+  const { onCopy, onCut, onPaste } = useClipboardEvents();
+
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleRightClick = (event: React.MouseEvent) => {
+    event.preventDefault(); // Evita que se abra el menú contextual del navegador por defecto
+
+    const { clientX, clientY } = event;
+    setMenuPosition({ x: clientX, y: clientY });
+  };
+
+  // Cierra el menú al hacer clic fuera
+  const handleClickOutside = () => {
+    setMenuPosition(null);
+  };
+
+  useEffect(() => {
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const ref = sheetRef.current;
+    if (!ref) return;
+
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
+    ref.addEventListener('contextmenu', handleContextMenu);
+
+    return () => ref.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
   return (
-    <div className={s['table-container']}>
+    <div
+      onContextMenu={handleRightClick}
+      ref={sheetRef}
+      className={s['table-container']}
+    >
       <table
         className={clsx(s.sheet, {
           'select-auto': !!focusedCellInputRef?.current,
@@ -75,7 +124,7 @@ export const Sheet: FC = () => {
             return (
               <tr
                 className={s['sheet-row']}
-                key={rowNumber.value}
+                key={rowNumber.coord}
                 style={{
                   lineHeight: `${rowHeights[rowNumber.name] || ROW_DEFAULT_HEIGHT}px`,
                 }}
@@ -99,13 +148,21 @@ export const Sheet: FC = () => {
                 </td>
 
                 {row.map((cell) => {
-                  return <Cell key={cell.id} cell={cell} />;
+                  return <Cell key={`${cell.x}${cell.y}`} cell={cell} />;
                 })}
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      <SheetContextualMenu
+        onCopy={onCopy}
+        onCut={onCut}
+        onPaste={onPaste}
+        onClean={onCleanCells}
+        menuPosition={menuPosition}
+      />
     </div>
   );
 };

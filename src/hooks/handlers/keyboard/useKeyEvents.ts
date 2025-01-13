@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import KeyEnum from '../../../enum/key.enum';
 import {
@@ -10,32 +10,38 @@ import { Direction, useSheetStore } from '../../../stores/useSheetStore';
 
 export const usePressedKeys = () => {
   const [
-    addPressedKey,
     focusedCellInputRef,
     moveLatestSelectedCell,
     moveRemarkedCell,
-    pressedKeys,
     remarkedCellCoords,
     remarkedCellInputRef,
-    removePressedKey,
-    setPressedKeys,
     selectedCells,
     updateCells,
+    recomputeSheet,
   ] = useSheetStore(
     useShallow((state) => [
-      state.addPressedKey,
       state.focusedCellInputRef,
       state.moveLatestSelectedCell,
       state.moveRemarkedCell,
-      state.pressedKeys,
-      state.remarkedCell,
+      state.remarkedCellCoords,
       state.remarkedCellInputRef,
-      state.removePressedKey,
-      state.setPressedKeys,
-      state.selectedCells,
+      state.selectedCellsCoords,
       state.updateCells,
+      state.recomputeSheet,
     ])
   );
+
+  const [pressedKeys, setPressedKeys] = useState<KeyEnum[]>([]);
+
+  const addPressedKey = useCallback((key: KeyEnum) => {
+    setPressedKeys((pressedKeys) => [...new Set([...pressedKeys, key])]);
+  }, []);
+
+  const removePressedKey = useCallback((key: KeyEnum) => {
+    setPressedKeys((pressedKeys) =>
+      pressedKeys.filter((stateKey) => stateKey !== key)
+    );
+  }, []);
 
   const focusedElement = focusedCellInputRef?.current;
   const remarkedElement = remarkedCellInputRef?.current;
@@ -68,26 +74,27 @@ export const usePressedKeys = () => {
   );
 
   const onPressBackspace = useCallback(() => {
-    if (!focusedElement) {
-      updateCells(
-        selectedCells.map((coords) => ({
-          coords,
-          newValue: '',
-        }))
-      );
-    }
-  }, [focusedElement, selectedCells, updateCells]);
+    if (focusedElement) return;
+
+    updateCells(
+      selectedCells.map((coords) => ({
+        coords,
+        newValue: '',
+      }))
+    );
+
+    recomputeSheet();
+  }, [focusedElement, recomputeSheet, selectedCells, updateCells]);
 
   const onPressArrow = useCallback(
     (direction: Direction) => {
-      if (!focusedElement) {
-        moveRemarkedCell(direction);
-      }
+      if (focusedElement) return;
+      moveRemarkedCell(direction);
     },
     [focusedElement, moveRemarkedCell]
   );
 
-  const getActionByKeyPressed = useCallback(
+  const getActionByKeysPressed = useCallback(
     (pressedKeys: KeyEnum[]): VoidFunction | undefined => {
       const pressedKeysValue = pressedKeys
         .map((key) => key.toUpperCase())
@@ -126,13 +133,12 @@ export const usePressedKeys = () => {
   const handlePressedKeys = useCallback(() => {
     if (!pressedKeys.length) return;
 
-    const keyAction = getActionByKeyPressed(pressedKeys);
-
+    const keyAction = getActionByKeysPressed(pressedKeys);
     if (keyAction) return keyAction();
 
     const isSingleKeyPressed = pressedKeys.length === 1;
 
-    const keyPressed = pressedKeys[0];
+    const keyPressed = pressedKeys[pressedKeys.length - 1];
     const inputKeyPressed = isSingleKeyPressed && isInputKey(keyPressed);
 
     const updateRemarkedCell =
@@ -141,14 +147,21 @@ export const usePressedKeys = () => {
       typeof remarkedElement?.innerText !== 'undefined';
 
     if (updateRemarkedCell && remarkedCellCoords) {
+      updateCells([
+        {
+          coords: remarkedCellCoords,
+          newValue: '',
+        },
+      ]);
       remarkedElement.focus();
     }
   }, [
     focusedElement,
-    getActionByKeyPressed,
+    getActionByKeysPressed,
     pressedKeys,
     remarkedCellCoords,
     remarkedElement,
+    updateCells,
   ]);
 
   const handleKeyDown = useCallback(
@@ -171,17 +184,9 @@ export const usePressedKeys = () => {
     (e: KeyboardEvent) => {
       const keyCode = e.key as KeyEnum;
 
-      const hasSpecialKey = pressedKeys.some((key) => isSpecialKey(key));
-
-      if (hasSpecialKey) {
-        setPressedKeys([]);
-
-        return;
-      }
-
       removePressedKey(keyCode);
     },
-    [pressedKeys, removePressedKey, setPressedKeys]
+    [removePressedKey]
   );
 
   useEffect(() => {
@@ -190,14 +195,20 @@ export const usePressedKeys = () => {
   }, [pressedKeys]);
 
   useEffect(() => {
+    const cleanPressedKeys = () => {
+      setPressedKeys([]);
+    };
+
+    window.addEventListener('blur', cleanPressedKeys);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
 
     return () => {
+      window.addEventListener('blur', cleanPressedKeys);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleKeyUp, handleKeyDown]);
+  }, [handleKeyUp, handleKeyDown, setPressedKeys]);
 
   return {};
 };

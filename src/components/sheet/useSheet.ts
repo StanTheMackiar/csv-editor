@@ -1,8 +1,8 @@
 import { getColorFromSequence } from '@/helpers/color.helper';
 import { parseExpression } from '@/helpers/sheet/cell/cell.helper';
 import {
-  extractCells,
-  extractCoordsFromId,
+  getCoordsById,
+  getCoordsInRank,
   getSheetLetters,
   getSheetNumbers,
 } from '@/helpers/sheet/sheet.helper';
@@ -26,17 +26,19 @@ export const useSheet = () => {
     setSelectedCells,
     setFunctionModeCells,
     sheet,
+    cleanSelectedCellsContent,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCell,
+      state.focusedCellCoords,
       state.colsQty,
       state.focusedCellInputRef,
       state.functionMode,
       state.rowsQty,
-      state.selectedCells,
-      state.setSelectedCells,
-      state.setFunctionModeCells,
+      state.selectedCellsCoords,
+      state.setSelectedCellsCoords,
+      state.setFunctionModeCellsCoords,
       state.sheet,
+      state.cleanSelectedCellsContent,
     ])
   );
 
@@ -51,17 +53,17 @@ export const useSheet = () => {
       return;
     }
 
-    const { refsFound } = parseExpression(focusedValue, sheet);
+    const { refs } = parseExpression(focusedValue, sheet);
 
     const functionModeCells: FunctionModeCell[] = [];
 
-    refsFound.forEach((cell, i) => {
+    refs.forEach((cell, i) => {
       const color = getColorFromSequence(i);
-      const [startCell, endCell] = cell.ref.split(':');
-      const isRange = !!endCell;
+      const [startCellId, endCellId] = cell.ref.split(':');
+      const isRange = !!endCellId;
 
       if (isRange) {
-        const cellCoords = extractCells(startCell, endCell, sheet);
+        const cellCoords = getCoordsInRank(startCellId, endCellId);
 
         cellCoords.forEach((coords) => {
           functionModeCells.push({
@@ -70,7 +72,7 @@ export const useSheet = () => {
           });
         });
       } else {
-        const coords = extractCoordsFromId(startCell);
+        const coords = getCoordsById(startCellId);
 
         functionModeCells.push({
           coords,
@@ -88,7 +90,7 @@ export const useSheet = () => {
   const onClickColumn = (col: ICellSpecial) => {
     const columnsFound: CellCoords[] = sheet
       .flat()
-      .filter((cell) => cell.x === col.value)
+      .filter((cell) => cell.x === col.coord)
       .map((cell) => ({ x: cell.x, y: cell.y }));
 
     setSelectedCells(columnsFound);
@@ -97,7 +99,7 @@ export const useSheet = () => {
   const onClickRow = (row: ICellSpecial) => {
     const rowsFound: CellCoords[] = sheet
       .flat()
-      .filter((cell) => cell.y === row.value)
+      .filter((cell) => cell.y === row.coord)
       .map((cell) => ({ x: cell.x, y: cell.y }));
 
     setSelectedCells(rowsFound);
@@ -114,7 +116,7 @@ export const useSheet = () => {
       const selectedCellsArray = Array.from(selectedCells);
 
       const someColSelected = selectedCellsArray.some(
-        (selectedCell) => selectedCell.x === col.value
+        (selectedCell) => selectedCell.x === col.coord
       );
 
       return someColSelected;
@@ -127,13 +129,17 @@ export const useSheet = () => {
       const selectedCellsArray = Array.from(selectedCells);
 
       const someRowSelected = selectedCellsArray.some(
-        (selectedCell) => selectedCell.y === row.value
+        (selectedCell) => selectedCell.y === row.coord
       );
 
       return someRowSelected;
     },
     [selectedCells]
   );
+
+  const onCleanCells = () => {
+    cleanSelectedCellsContent();
+  };
 
   return {
     focusedCellInputRef,
@@ -143,6 +149,7 @@ export const useSheet = () => {
 
     getColIsSelected,
     getRowIsSelected,
+    onCleanCells,
     onClickAll,
     onClickColumn,
     onClickRow,
