@@ -5,7 +5,11 @@ import {
   ISheet,
   ParseExpressionReturn,
 } from '../../../types/sheet/cell/cell.types';
-import { CELL_REGEX, MATH_REGEX } from '../../constants/regex.constans';
+import {
+  CELL_REGEX,
+  MATH_REGEX,
+  NUMBER_REGEX,
+} from '../../constants/regex.constans';
 import { getCell, getCoordsById } from '../sheet.helper';
 import { isValidFuncExpression } from './is-valid-exp-helper';
 
@@ -64,10 +68,11 @@ export const parseExpression = (
 
             coords.push({ y, x });
 
-            const numberValue = Number(computedValue);
-            const isString = isNaN(numberValue);
+            const isNumber = NUMBER_REGEX.test(computedValue);
 
-            values.push(isString ? `'${computedValue}'` : String(numberValue));
+            values.push(
+              isNumber ? String(computedValue) : `"${computedValue}"`
+            );
           }
         }
 
@@ -87,10 +92,9 @@ export const parseExpression = (
 
         coords.push({ y, x });
 
-        const numberValue = Number(computedValue);
-        const isString = isNaN(numberValue);
+        const isNumber = NUMBER_REGEX.test(computedValue);
 
-        return String(isString ? `'${computedValue}'` : numberValue);
+        return isNumber ? String(computedValue) : `"${computedValue}"`;
       }
     }
   );
@@ -127,25 +131,39 @@ export const computeCell = (
   let computedValue = value;
 
   try {
-    const isValid = isValidFuncExpression(computedValue);
+    const { errorMsg, valid } = isValidFuncExpression(computedValue);
 
-    if (!isValid) {
-      const errorMsg = '#INVALID_EXPRESSION';
-
-      throw new Error(errorMsg, {
+    if (!valid) {
+      throw new Error('', {
         cause: errorMsg,
       });
     }
 
     const { parsedExp } = parseExpression(computedValue, sheet);
-    const finalExp = String(eval(parsedExp));
+
+    if (!parsedExp) {
+      throw new Error('', {
+        cause: '#EMPTY_EXPRESSION',
+      });
+    }
+
+    const evalResult = eval(parsedExp);
+    const allowedTypes = ['number', 'string'];
+
+    if (!allowedTypes.includes(typeof evalResult)) {
+      throw new Error('', {
+        cause: '#INVALID_RESULT_TYPE',
+      });
+    }
+
+    const finalExp = String(evalResult);
+
     computedValue = finalExp;
   } catch (error) {
-    console.error(error);
     computedValue = '#ERROR';
 
     if (error instanceof Error && error.cause) {
-      computedValue = error.message;
+      computedValue = error.cause as string;
     }
   }
 

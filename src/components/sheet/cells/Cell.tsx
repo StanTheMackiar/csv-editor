@@ -1,3 +1,5 @@
+'use client';
+
 import ContentEditable from '@/components/core/input/ContentEditable';
 import clsx from 'clsx';
 import { FC } from 'react';
@@ -12,7 +14,7 @@ export interface CellProps {
 export const Cell: FC<CellProps> = (props) => {
   const {
     cellId,
-    cellIsCutted,
+    cellIsOnClipboard,
     functionModeCell,
     html,
     inputFocused,
@@ -61,8 +63,8 @@ export const Cell: FC<CellProps> = (props) => {
               : undefined,
             backgroundColor: `${functionModeCell.color}05`,
           }),
-          ...(cellIsCutted && {
-            outline: '2px #9fa4ec dashed',
+          ...(cellIsOnClipboard && {
+            outline: '2px #3d45b4 dashed',
           }),
         }}
         html={html}

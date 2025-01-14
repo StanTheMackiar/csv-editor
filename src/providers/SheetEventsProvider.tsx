@@ -1,3 +1,5 @@
+'use client';
+
 import { useMouseEvents, usePressedKeys } from '@/hooks';
 import { FC, PropsWithChildren } from 'react';
 

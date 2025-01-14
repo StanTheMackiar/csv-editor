@@ -6,23 +6,17 @@ import {
 export const isValidFuncExpression = (
   expression: string
 ): { valid: boolean; errorMsg: string } => {
-  if (!expression)
-    return {
-      valid: false,
-      errorMsg: '#EMPTY_EXPRESSION',
-    }; // Si la expresión está vacía, es inválida.
+  if (!expression) {
+    return { valid: false, errorMsg: '#EMPTY_EXPRESSION' };
+  }
 
-  if (!expression.startsWith('='))
-    return {
-      valid: false,
-      errorMsg: '#MUST_START_WITH_EQUAL',
-    }; // Si no empieza con '=', es inválida.
+  if (!expression.startsWith('=')) {
+    return { valid: false, errorMsg: '#MUST_START_WITH_EQUAL' };
+  }
 
-  if (!expression.substring(1)) {
-    return {
-      valid: false,
-      errorMsg: '#EMPTY_EXPRESSION',
-    };
+  const content = expression.substring(1).trim(); // Remover `=` y espacios
+  if (!content) {
+    return { valid: false, errorMsg: '#EMPTY_EXPRESSION_AFTER_EQUAL' };
   }
 
   // Lista de funciones permitidas
@@ -31,32 +25,56 @@ export const isValidFuncExpression = (
     ...Object.values(GlobalFunctionsEnumES),
   ];
 
-  // Expresión regular para validar funciones, referencias y operaciones
-  const regex =
-    /^=([\w]+)?\(?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")(;|,)?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")*\)?([+\-*/]\(?([A-Z]+[0-9]+|\d+|"[^"]*"|[\w]+\([^\)]+\))\)?)*$/i;
+  // Validar estructura general
+  const generalRegex =
+    /^([\w]+)?\(?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")?(;|,)?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")*\)?([+\-*/]\(?([A-Z]+[0-9]+|\d+|"[^"]*"|[\w]+\([^\)]*\))\)?)*$/i;
 
-  // Validar la expresión completa contra la regex
-  const match = expression.match(regex);
-  if (!match)
-    return {
-      valid: false,
-      errorMsg: '#INCORRECT_FORMAT',
-    };
+  if (!generalRegex.test(content)) {
+    return { valid: false, errorMsg: '#INVALID_GENERAL_FORMAT' };
+  }
 
-  // Extraer los posibles nombres de funciones para validar que sean válidas
-  const functionNames = Array.from(expression.matchAll(/\b([A-Z]+)\(/gi)).map(
-    (m) => m[1].toUpperCase()
-  );
+  // Validar nombres de funciones
+  const functionMatches = Array.from(content.matchAll(/\b([A-Z]+)\(/gi));
+  const functionNames = functionMatches.map((m) => m[1].toUpperCase());
 
-  const hasFunctionNames = functionNames.length > 0;
+  for (const fn of functionNames) {
+    if (
+      !validFunctions.includes(fn as GlobalFunctionsEnumEN) &&
+      !validFunctions.includes(fn as GlobalFunctionsEnumES)
+    ) {
+      return { valid: false, errorMsg: `#INVALID_FUNCTION_NAME (${fn})` };
+    }
+  }
 
-  // Verificar que todas las funciones en la expresión estén en la lista permitida
-  return {
-    valid: hasFunctionNames
-      ? functionNames.every((fn) =>
-          validFunctions.includes(fn as GlobalFunctionsEnumEN)
-        )
-      : true,
-    errorMsg: '#INVALID_FUNCTION',
-  };
+  // Validar argumentos de funciones
+  const argsRegex = /([A-Z]+)\((.*?)\)/gi; // Extraer contenido dentro de paréntesis
+  const argsMatches = Array.from(content.matchAll(argsRegex));
+
+  for (const match of argsMatches) {
+    const args = match[2]; // Contenido dentro de los paréntesis
+    if (
+      args &&
+      !/^([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")(;|,)?(.*?)$/.test(args)
+    ) {
+      return {
+        valid: false,
+        errorMsg: `#INVALID_ARGUMENTS_IN_FUNCTION (${match[1]})`,
+      };
+    }
+  }
+
+  // Validar operaciones matemáticas
+  const mathRegex = /[+\-*/]/;
+  if (mathRegex.test(content)) {
+    const invalidOperations = content.match(/[+\-*/]\s*$/); // Verificar operaciones mal formadas
+    if (invalidOperations) {
+      return {
+        valid: false,
+        errorMsg: '#INVALID_OPERATION_FORMAT',
+      };
+    }
+  }
+
+  // Si todas las validaciones pasan
+  return { valid: true, errorMsg: '' };
 };

@@ -1,3 +1,5 @@
+'use client';
+
 import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { FC } from 'react';

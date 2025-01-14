@@ -19,7 +19,7 @@ export const useCell = ({ cell }: CellProps) => {
     functionModeCells,
     focusedCell,
     recomputeSheet,
-    cuttedCellsCoords,
+    clipboardCellsCoords,
   ] = useSheetStore(
     useShallow((state) => {
       return [
@@ -34,16 +34,16 @@ export const useCell = ({ cell }: CellProps) => {
         state.functionModeCellsCoords,
         state.focusedCellCoords,
         state.recomputeSheet,
-        state.cuttedCellsCoords,
+        state.clipboardCellsCoords,
       ];
     })
   );
 
-  const cellIsCutted = useMemo(() => {
-    return cuttedCellsCoords.some(
+  const cellIsOnClipboard = useMemo(() => {
+    return clipboardCellsCoords.some(
       (cuttedCell) => cuttedCell.x === cell.x && cuttedCell.y === cell.y
     );
-  }, [cell.x, cell.y, cuttedCellsCoords]);
+  }, [cell.x, cell.y, clipboardCellsCoords]);
 
   const cellId = useMemo(
     () =>
@@ -138,13 +138,13 @@ export const useCell = ({ cell }: CellProps) => {
     const { value, computedValue } = cell;
 
     if (inputFocused) return parsedValue;
-    if (cellHasFunction) return computedValue || value;
+    if (cellHasFunction) return computedValue ?? value;
     else return value;
   }, [cell, inputFocused]);
 
   return {
     cellId,
-    cellIsCutted,
+    cellIsOnClipboard,
     functionModeCell,
     html,
     inputFocused,

@@ -19,6 +19,7 @@ import {
   ICell,
 } from '../types/sheet/cell/cell.types';
 
+type ClipboardAction = 'copy' | 'cut';
 export type UpdateCellData = { coords: Coords; newValue: string };
 export type Direction = 'left' | 'up' | 'down' | 'right';
 interface State {
@@ -34,7 +35,8 @@ interface State {
   selectedCellsCoords: Coords[];
   latestSelectedCellCoords: Coords | null;
   functionModeCellsCoords: FunctionModeCell[];
-  cuttedCellsCoords: Coords[];
+  clipboardCellsCoords: Coords[];
+  clipboardAction: ClipboardAction;
   sheet: ICell[][];
 }
 
@@ -57,7 +59,8 @@ interface Actions {
   unmarkSelectedCells: VoidFunction;
   updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
   cleanSelectedCellsContent: VoidFunction;
-  setCuttedCellsCoords: (coords: Coords[]) => void;
+  setClipboardAction: (action: ClipboardAction) => void;
+  setClipboardCellsCoords: (coords: Coords[]) => void;
 }
 
 export const defaultState: State = {
@@ -74,7 +77,8 @@ export const defaultState: State = {
   remarkedCellInputRef: null,
   selectedCellsCoords: [],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
-  cuttedCellsCoords: [],
+  clipboardCellsCoords: [],
+  clipboardAction: 'copy',
 };
 
 export const useSheetStore = create<State & Actions>((set, get) => ({
@@ -239,5 +243,7 @@ export const useSheetStore = create<State & Actions>((set, get) => ({
     );
   },
 
-  setCuttedCellsCoords: (coords) => set({ cuttedCellsCoords: coords }),
+  setClipboardCellsCoords: (coords) => set({ clipboardCellsCoords: coords }),
+
+  setClipboardAction: (action) => set({ clipboardAction: action }),
 }));

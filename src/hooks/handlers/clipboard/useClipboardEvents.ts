@@ -14,8 +14,10 @@ export const useClipboardEvents = () => {
     setSelectedCells,
     sheet,
     recomputeSheet,
-    cuttedCellsCoords,
-    setCuttedCellsCoords,
+    clipboardCellsCoords,
+    setClipboardCellsCoords,
+    setClipboardAction,
+    clipboardAction,
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
@@ -24,8 +26,10 @@ export const useClipboardEvents = () => {
       state.setSelectedCellsCoords,
       state.sheet,
       state.recomputeSheet,
-      state.cuttedCellsCoords,
-      state.setCuttedCellsCoords,
+      state.clipboardCellsCoords,
+      state.setClipboardCellsCoords,
+      state.setClipboardAction,
+      state.clipboardAction,
     ])
   );
 
@@ -65,8 +69,18 @@ export const useClipboardEvents = () => {
 
       const clipboardText = getClipboardText();
       await copy(clipboardText);
+
+      setClipboardCellsCoords(selectedCells);
+      setClipboardAction('copy');
     },
-    [copy, focusedElement, getClipboardText]
+    [
+      copy,
+      focusedElement,
+      getClipboardText,
+      selectedCells,
+      setClipboardAction,
+      setClipboardCellsCoords,
+    ]
   );
 
   const onCut = useCallback(
@@ -78,7 +92,8 @@ export const useClipboardEvents = () => {
       const clipboardText = getClipboardText();
       await copy(clipboardText);
 
-      setCuttedCellsCoords(selectedCells);
+      setClipboardCellsCoords(selectedCells);
+      setClipboardAction('cut');
       recomputeSheet();
     },
     [
@@ -87,7 +102,8 @@ export const useClipboardEvents = () => {
       getClipboardText,
       recomputeSheet,
       selectedCells,
-      setCuttedCellsCoords,
+      setClipboardAction,
+      setClipboardCellsCoords,
     ]
   );
 
@@ -99,7 +115,7 @@ export const useClipboardEvents = () => {
 
       const clipboardText = await paste();
 
-      if (!clipboardText || !selectedCells.length) return;
+      if (!selectedCells.length) return;
 
       const rows = clipboardText.split('\n');
       const newCells: UpdateCellData[] = [];
@@ -123,23 +139,30 @@ export const useClipboardEvents = () => {
         newCells.map(({ coords }) => ({ x: coords.x, y: coords.y }))
       );
 
-      const cellsToClean = cuttedCellsCoords.map((coords) => ({
-        coords,
-        newValue: '',
-      }));
+      let cellsToClean: UpdateCellData[] = [];
 
-      setCuttedCellsCoords([]);
+      if (clipboardAction === 'cut') {
+        cellsToClean = clipboardCellsCoords.map((coords) => ({
+          coords,
+          newValue: '',
+        }));
+      }
+
+      setClipboardCellsCoords([]);
+      setClipboardAction('copy');
       updateCells([...cellsToClean, ...newCells]);
 
       recomputeSheet();
     },
     [
-      cuttedCellsCoords,
+      clipboardAction,
+      clipboardCellsCoords,
       focusedElement,
       paste,
       recomputeSheet,
       selectedCells,
-      setCuttedCellsCoords,
+      setClipboardAction,
+      setClipboardCellsCoords,
       setSelectedCells,
       updateCells,
     ]

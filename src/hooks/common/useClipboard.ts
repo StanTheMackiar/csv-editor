@@ -31,7 +31,7 @@ export const useClipboard = () => {
     }
 
     try {
-      return await navigator.clipboard.readText();
+      return (await navigator.clipboard.readText()) || '';
     } catch (error) {
       const message = `Paste failed: ${error}`;
 
