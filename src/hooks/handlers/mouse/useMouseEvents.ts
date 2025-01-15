@@ -1,10 +1,10 @@
 import {
   getAbsoluteCursorPosition,
   isBetween,
-  parseExpression,
   parseHTMLToText,
 } from '@/helpers';
-import { useCallback, useEffect, useState } from 'react';
+import { parseExpression } from '@/helpers/sheet/cell/parse-expression.helper';
+import { RefObject, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   getCell,
@@ -15,7 +15,7 @@ import {
 import { useSheetStore } from '../../../stores/useSheetStore';
 import { CellRef, Coords } from '../../../types/sheet/cell/cell.types';
 
-export const useMouseEvents = () => {
+export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
   const [
     updateCells,
     focusedCellInput,
@@ -205,6 +205,8 @@ export const useMouseEvents = () => {
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
+      if (!isSelecting && !isSelectingFunctionMode) return;
+
       const currentCell = getCellFromMouseEvent(sheet, e);
       if (!currentCell) return;
 
@@ -232,6 +234,8 @@ export const useMouseEvents = () => {
           : functionModeStartId;
 
         const remarkedCell = getCell(remarkedCellCoords, sheet);
+
+        if (!remarkedCell) throw new Error('Cell not found');
 
         const { refs } = parseExpression(remarkedCell.value, sheet);
         const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
@@ -297,16 +301,18 @@ export const useMouseEvents = () => {
   }, [setIsSelecting, setIsSelectingFunctionMode]);
 
   useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
+    const ref = sheetRef.current;
+
+    ref?.addEventListener('mousemove', handleMouseMove);
+    ref?.addEventListener('mousedown', handleMouseDown);
+    ref?.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousedown', handleMouseDown);
+      ref?.removeEventListener('mousemove', handleMouseMove);
+      ref?.removeEventListener('mouseup', handleMouseUp);
+      ref?.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [handleMouseMove, handleMouseUp, handleMouseDown]);
+  }, [handleMouseMove, handleMouseUp, handleMouseDown, sheetRef]);
 
   return {};
 };

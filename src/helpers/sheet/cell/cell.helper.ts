@@ -1,111 +1,7 @@
-import {
-  CellRef,
-  Coords,
-  ICell,
-  ISheet,
-  ParseExpressionReturn,
-} from '../../../types/sheet/cell/cell.types';
-import {
-  CELL_REGEX,
-  MATH_REGEX,
-  NUMBER_REGEX,
-} from '../../constants/regex.constans';
-import { getCell, getCoordsById } from '../sheet.helper';
+import { ICell, ISheet } from '../../../types/sheet/cell/cell.types';
+import { MATH_REGEX } from '../../constants/regex.constans';
 import { isValidFuncExpression } from './is-valid-exp-helper';
-
-export const parseExpression = (
-  value: string,
-  sheet: ISheet
-): ParseExpressionReturn => {
-  const coords: Coords[] = [];
-  const refs: CellRef[] = [];
-
-  const isFunction = value.startsWith('=');
-
-  if (!isFunction) {
-    return {
-      coords,
-      parsedExp: value,
-      isFunction: false,
-      refs,
-    };
-  }
-
-  const finalValue = value
-    .substring(1)
-    .trim()
-    //? Reemplazar los paréntesis que contienen rangos
-    .replace(/\(([^)]+)\)/g, (match) => match.replace(/;/g, ','));
-
-  const parsedExp = finalValue.replace(
-    CELL_REGEX,
-    (original, startCol, startRow, range, endCol, endRow, offset) => {
-      if (!startCol || !startRow) {
-        return original; // Devuelve el texto original si no es válido
-      }
-
-      if (range) {
-        // Es un rango, por ejemplo: A1:A17
-        const startId = `${startCol}${startRow}`;
-        const endId = `${endCol}${endRow}`;
-
-        const startCoords = getCoordsById(startId);
-        const endCoords = getCoordsById(endId);
-
-        const rangeRef = `${startId}:${endId}`;
-        refs.push({
-          start: offset + 1,
-          end: offset + rangeRef.length + 1,
-          ref: rangeRef,
-        });
-
-        const values: string[] = [];
-
-        for (let y = startCoords.y; y <= endCoords.y; y++) {
-          for (let x = startCoords.x; x <= endCoords.x; x++) {
-            const cell = getCell({ x, y }, sheet);
-            const computedValue = cell.computedValue || cell.value;
-
-            coords.push({ y, x });
-
-            const isNumber = NUMBER_REGEX.test(computedValue);
-
-            values.push(
-              isNumber ? String(computedValue) : `"${computedValue}"`
-            );
-          }
-        }
-
-        return values.join(',');
-      } else {
-        const cellId = `${startCol}${startRow}`;
-        const { x, y } = getCoordsById(cellId);
-
-        refs.push({
-          start: offset + 1,
-          end: offset + cellId.length + 1,
-          ref: cellId,
-        });
-
-        const cell = getCell({ x, y }, sheet);
-        const computedValue = cell.computedValue || cell.value;
-
-        coords.push({ y, x });
-
-        const isNumber = NUMBER_REGEX.test(computedValue);
-
-        return isNumber ? String(computedValue) : `"${computedValue}"`;
-      }
-    }
-  );
-
-  return {
-    coords,
-    parsedExp,
-    isFunction,
-    refs,
-  };
-};
+import { parseExpression } from './parse-expression.helper';
 
 export const parseRange = (range: `${string}:${string}`) => {
   const [start, end] = range.split(':');
@@ -148,6 +44,7 @@ export const computeCell = (
     }
 
     const evalResult = eval(parsedExp);
+
     const allowedTypes = ['number', 'string'];
 
     if (!allowedTypes.includes(typeof evalResult)) {
@@ -156,9 +53,7 @@ export const computeCell = (
       });
     }
 
-    const finalExp = String(evalResult);
-
-    computedValue = finalExp;
+    computedValue = String(evalResult);
   } catch (error) {
     computedValue = '#ERROR';
 

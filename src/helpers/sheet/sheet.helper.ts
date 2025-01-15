@@ -15,7 +15,7 @@ export const getCell = (coords: Coords, sheet: ISheet) => {
     coords.x < 0 ||
     coords.x >= sheet[coords.y]?.length
   ) {
-    throw new Error('Cell coordinates out of bounds');
+    return;
   }
 
   return sheet[coords.y][coords.x];
@@ -136,7 +136,10 @@ export const adjustSheetSize = (
   return newSheet;
 };
 
-export const getCellFromMouseEvent = (sheet: ISheet, e: any): ICell | null => {
+export const getCellFromMouseEvent = (
+  sheet: ISheet,
+  e: any
+): ICell | undefined => {
   const target = e.target as HTMLInputElement;
   const [cellId] = target.id.split('-');
 
@@ -145,8 +148,11 @@ export const getCellFromMouseEvent = (sheet: ISheet, e: any): ICell | null => {
   return cell;
 };
 
-export const getCellFromId = (sheet: ISheet, cellId?: string): ICell | null => {
-  if (!cellId) return null;
+export const getCellFromId = (
+  sheet: ISheet,
+  cellId?: string
+): ICell | undefined => {
+  if (!cellId) return;
 
   const coords = getCoordsById(cellId);
   const cell = getCell(coords, sheet);
@@ -157,11 +163,11 @@ export const getCellFromId = (sheet: ISheet, cellId?: string): ICell | null => {
 export const getCellFromInputRef = (
   inputRef: RefObject<HTMLInputElement> | null,
   sheet: ISheet
-): ICell | null => {
-  if (!inputRef?.current) return null;
+): ICell | undefined => {
+  if (!inputRef?.current) return;
 
   const [cellId] = inputRef?.current.id.split('-');
-  if (!cellId) return null;
+  if (!cellId) return;
 
   return getCellFromId(sheet, cellId);
 };

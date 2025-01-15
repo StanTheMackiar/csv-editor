@@ -1,5 +1,5 @@
 import { getColorFromSequence } from '@/helpers/color.helper';
-import { parseExpression } from '@/helpers/sheet/cell/cell.helper';
+import { parseExpression } from '@/helpers/sheet/cell/parse-expression.helper';
 import {
   getCoordsById,
   getCoordsInRank,
@@ -12,7 +12,7 @@ import {
   FunctionModeCell,
   ICellSpecial,
 } from '@/types/sheet/cell/cell.types';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 
 export const useSheet = () => {
@@ -41,6 +41,8 @@ export const useSheet = () => {
       state.cleanSelectedCellsContent,
     ])
   );
+
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const focusedValue = focusedCell
@@ -144,6 +146,7 @@ export const useSheet = () => {
   return {
     focusedCellInputRef,
     sheet,
+    sheetRef,
     sheetLetters,
     sheetNumbers,
 

@@ -1,11 +1,11 @@
 import { useClipboardEvents } from '@/hooks';
 import { Coords } from '@/types/sheet/cell/cell.types';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export const useSheetClipboard = () => {
+export const useSheetClipboard = (
+  sheetRef: React.RefObject<HTMLDivElement>
+) => {
   const { onCopy, onCut, onPaste } = useClipboardEvents();
-
-  const sheetRef = useRef<HTMLDivElement>(null);
 
   const [menuPosition, setMenuPosition] = useState<Coords | null>(null);
 
@@ -40,7 +40,7 @@ export const useSheetClipboard = () => {
     ref.addEventListener('contextmenu', handleContextMenu);
 
     return () => ref.removeEventListener('contextmenu', handleContextMenu);
-  }, []);
+  }, [sheetRef]);
 
   return {
     menuPosition,
@@ -49,6 +49,5 @@ export const useSheetClipboard = () => {
     onCut,
     onPaste,
     openContextualMenu,
-    sheetRef,
   };
 };

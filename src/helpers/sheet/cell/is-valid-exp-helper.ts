@@ -25,13 +25,13 @@ export const isValidFuncExpression = (
     ...Object.values(GlobalFunctionsEnumES),
   ];
 
-  // Validar estructura general
-  const generalRegex =
-    /^([\w]+)?\(?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")?(;|,)?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")*\)?([+\-*/]\(?([A-Z]+[0-9]+|\d+|"[^"]*"|[\w]+\([^\)]*\))\)?)*$/i;
+  // // Validar estructura general
+  // const generalRegex =
+  //   /^([\w]+)?\(?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")?(;|,)?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")*\)?([+\-*/]\(?([A-Z]+[0-9]+|\d+|"[^"]*"|[\w]+\([^\)]*\))\)?)*$/i;
 
-  if (!generalRegex.test(content)) {
-    return { valid: false, errorMsg: '#INVALID_GENERAL_FORMAT' };
-  }
+  // if (!generalRegex.test(content)) {
+  //   return { valid: false, errorMsg: '#INVALID_GENERAL_FORMAT' };
+  // }
 
   // Validar nombres de funciones
   const functionMatches = Array.from(content.matchAll(/\b([A-Z]+)\(/gi));

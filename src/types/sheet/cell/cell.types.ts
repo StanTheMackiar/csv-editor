@@ -24,9 +24,7 @@ export type CellRef = {
 };
 
 export type ParseExpressionReturn = {
-  coords: Coords[];
   refs: CellRef[];
-  isFunction: boolean;
   parsedExp: string;
 };
 

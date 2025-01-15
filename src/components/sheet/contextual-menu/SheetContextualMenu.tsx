@@ -18,7 +18,7 @@ export const SheetContextualMenu: FC<Props> = ({ menuPosition, items }) => {
   return (
     <div
       onClick={onClick}
-      className="absolute z-20 bg-white border rounded shadow-lg"
+      className="absolute z-20 bg-white border rounded-b shadow-lg"
       style={{ left: `${menuPosition.x}px`, top: `${menuPosition.y}px` }}
     >
       <ul className="p-2 min-w-60">
@@ -26,16 +26,15 @@ export const SheetContextualMenu: FC<Props> = ({ menuPosition, items }) => {
           <li
             key={item.text}
             onClick={item.onClick}
-            className="p-2 hover:bg-gray-200 cursor-pointer flex justify-between"
+            className="px-3 py-1.5 hover:bg-gray-200 rounded-lg cursor-pointer flex justify-between"
           >
             <div className="flex gap-3 items-center">
               <Icon icon={item.icon} className="text-lg" />
-              <span className="font-normal text-gray-800">{item.text}</span>
+
+              {item.text}
             </div>
 
-            <span className="font-medium italic text-gray-600">
-              {item.shortcut}
-            </span>
+            <kbd className="ml-auto text-xs text-gray-500">{item.shortcut}</kbd>
           </li>
         ))}
       </ul>

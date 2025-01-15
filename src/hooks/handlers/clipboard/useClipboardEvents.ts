@@ -45,7 +45,7 @@ export const useClipboardEvents = () => {
       if (!cellsByRow.has(coords.y)) {
         cellsByRow.set(coords.y, new Map());
       }
-      cellsByRow.get(coords.y)?.set(coords.x, cell.computedValue || cell.value);
+      cellsByRow.get(coords.y)?.set(coords.x, cell.value);
     });
 
     const rows = Array.from(cellsByRow.keys()).sort((a, b) => a - b);

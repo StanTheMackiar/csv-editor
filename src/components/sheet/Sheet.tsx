@@ -10,6 +10,7 @@ import {
   ROW_DEFAULT_HEIGHT,
   ROW_MIN_HEIGHT,
 } from '@/helpers/constants/sheet-config.helper';
+import { useMouseEvents, usePressedKeys } from '@/hooks';
 import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
 import { SheetContextualMenu } from './contextual-menu/SheetContextualMenu';
 import s from './Sheet.module.css';
@@ -21,6 +22,7 @@ export const Sheet: FC = () => {
   const {
     focusedCellInputRef,
     sheet,
+    sheetRef,
     sheetLetters,
     sheetNumbers,
 
@@ -32,6 +34,9 @@ export const Sheet: FC = () => {
     onClickRow,
   } = useSheet();
 
+  useMouseEvents(sheetRef);
+  usePressedKeys();
+
   const { columnWidths, rowHeights, resizeColumnWidth, resizeRowHeight } =
     useSheetRedimension();
 
@@ -42,8 +47,7 @@ export const Sheet: FC = () => {
     onCut,
     onPaste,
     openContextualMenu,
-    sheetRef,
-  } = useSheetClipboard();
+  } = useSheetClipboard(sheetRef);
 
   const contextMenuItems: ContextMenuItem[] = [
     {
@@ -85,10 +89,7 @@ export const Sheet: FC = () => {
       >
         <thead className={s['sheet-head']}>
           <tr className={s['sheet-row']}>
-            <th
-              className={clsx(s['sheet-header-cell'])}
-              onClick={onClickAll}
-            ></th>
+            <th className={clsx(s['sheet-header-cell'])} onClick={onClickAll} />
 
             {sheetLetters.map((col) => (
               <th

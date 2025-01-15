@@ -1,10 +1,12 @@
+import { LocalStorageEnum } from '@/enum/local-storage.enum';
+import { computeCell } from '@/helpers';
 import {
   INITIAL_COLS_QTY,
   INITIAL_ROWS_QTY,
 } from '@/helpers/constants/sheet-config.helper';
 import { RefObject } from 'react';
 import { create } from 'zustand';
-import { computeCell } from '../helpers/sheet/cell/cell.helper';
+import { persist } from 'zustand/middleware';
 import {
   createSheet,
   getCell,
@@ -23,6 +25,7 @@ type ClipboardAction = 'copy' | 'cut';
 export type UpdateCellData = { coords: Coords; newValue: string };
 export type Direction = 'left' | 'up' | 'down' | 'right';
 interface State {
+  name: string;
   colsQty: number;
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
@@ -61,9 +64,14 @@ interface Actions {
   cleanSelectedCellsContent: VoidFunction;
   setClipboardAction: (action: ClipboardAction) => void;
   setClipboardCellsCoords: (coords: Coords[]) => void;
+  importSheet: (json: string) => void;
+  exportSheet: () => string;
+  setName: (name: string) => void;
+  newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
 }
 
 export const defaultState: State = {
+  name: 'My Sheet',
   colsQty: INITIAL_COLS_QTY,
   rowsQty: INITIAL_ROWS_QTY,
   focusedCellInputRef: null,
@@ -81,169 +89,223 @@ export const defaultState: State = {
   clipboardAction: 'copy',
 };
 
-export const useSheetStore = create<State & Actions>((set, get) => ({
-  ...defaultState,
+export const useSheetStore = create(
+  persist<State & Actions>(
+    (set, get) => ({
+      ...defaultState,
 
-  setFunctionMode: (value) => set({ functionMode: value }),
+      setFunctionMode: (value) => set({ functionMode: value }),
 
-  setLatestSelectedCellCoords: (cell) =>
-    set({ latestSelectedCellCoords: cell }),
+      setLatestSelectedCellCoords: (cell) =>
+        set({ latestSelectedCellCoords: cell }),
 
-  setFocusedCellInputRef: (value) => set({ focusedCellInputRef: value }),
+      setFocusedCellInputRef: (value) => set({ focusedCellInputRef: value }),
 
-  setRemarkedCellInputRef: (value) => set({ remarkedCellInputRef: value }),
+      setRemarkedCellInputRef: (value) => set({ remarkedCellInputRef: value }),
 
-  setIsSelectingFunctionMode: (value) =>
-    set({ isSelectingFunctionMode: value }),
+      setIsSelectingFunctionMode: (value) =>
+        set({ isSelectingFunctionMode: value }),
 
-  setFunctionModeCellsCoords: (cells) =>
-    set({ functionModeCellsCoords: cells }),
+      setFunctionModeCellsCoords: (cells) =>
+        set({ functionModeCellsCoords: cells }),
 
-  recomputeSheet: () =>
-    set(({ sheet }) => {
-      const newSheet = sheet.map((row) =>
-        row.map((cell) => {
-          const newCell = computeCell(cell, sheet);
+      recomputeSheet: () =>
+        set(({ sheet }) => {
+          const newSheet = sheet.map((row) =>
+            row.map((cell) => {
+              const newCell = computeCell(cell, sheet);
 
-          return newCell;
-        })
-      );
+              return newCell;
+            })
+          );
 
-      return { sheet: newSheet };
-    }),
+          return { sheet: newSheet };
+        }),
 
-  updateCells: (updatedCells, recompute = true) =>
-    set(({ sheet }) => {
-      const newSheet = sheet.slice();
+      updateCells: (updatedCells, recompute = true) =>
+        set(({ sheet }) => {
+          const newSheet = sheet.slice();
 
-      updatedCells.forEach(({ coords, newValue }) => {
-        const targetCell = getCell(coords, sheet);
+          updatedCells.forEach(({ coords, newValue }) => {
+            const targetCell = getCell(coords, sheet);
 
-        newSheet[coords.y][coords.x] = recompute
-          ? computeCell(targetCell, sheet, newValue)
-          : { ...targetCell, value: newValue };
-      });
+            if (!targetCell) return;
 
-      return {
-        sheet: newSheet,
-      };
-    }),
-
-  moveRemarkedCell: (direction) =>
-    set(
-      ({
-        remarkedCellCoords,
-        remarkedCellInputRef,
-        focusedCellInputRef,
-        sheet,
-      }) => {
-        if (!remarkedCellCoords) return {};
-
-        const newRemarkedCell = getCoordsByDirection(
-          direction,
-          remarkedCellCoords
-        );
-
-        try {
-          getCell(newRemarkedCell, sheet);
-
-          focusedCellInputRef?.current?.blur();
-          remarkedCellInputRef?.current?.blur();
+            newSheet[coords.y][coords.x] = recompute
+              ? computeCell(targetCell, sheet, newValue)
+              : { ...targetCell, value: newValue };
+          });
 
           return {
-            remarkedCellCoords: newRemarkedCell,
-            selectedCellsCoords: [newRemarkedCell],
-            latestSelectedCellCoords: newRemarkedCell,
+            sheet: newSheet,
           };
-        } catch (err) {
-          console.error(err);
+        }),
 
-          return {};
-        }
-      }
-    ),
+      moveRemarkedCell: (direction) =>
+        set(
+          ({
+            remarkedCellCoords,
+            remarkedCellInputRef,
+            focusedCellInputRef,
+            sheet,
+          }) => {
+            if (!remarkedCellCoords) {
+              const coords: Coords = { x: 0, y: 0 };
 
-  selectCells: (startCellCoords, currentCellCoords) =>
-    set(() => {
-      const newSelectedCells = getCoordsInRank(
-        startCellCoords,
-        currentCellCoords
-      );
+              return {
+                remarkedCellCoords: coords,
+                selectedCellsCoords: [coords],
+                latestSelectedCellCoords: coords,
+              };
+            }
 
-      return {
-        selectedCellsCoords: newSelectedCells,
-        latestSelectedCellCoords: currentCellCoords,
-      };
+            const newRemarkedCell = getCoordsByDirection(
+              direction,
+              remarkedCellCoords
+            );
+
+            try {
+              getCell(newRemarkedCell, sheet);
+
+              focusedCellInputRef?.current?.blur();
+              remarkedCellInputRef?.current?.blur();
+
+              return {
+                remarkedCellCoords: newRemarkedCell,
+                selectedCellsCoords: [newRemarkedCell],
+                latestSelectedCellCoords: newRemarkedCell,
+              };
+            } catch (err) {
+              console.error(err);
+
+              return {};
+            }
+          }
+        ),
+
+      selectCells: (startCellCoords, currentCellCoords) =>
+        set(() => {
+          const newSelectedCells = getCoordsInRank(
+            startCellCoords,
+            currentCellCoords
+          );
+
+          return {
+            selectedCellsCoords: newSelectedCells,
+            latestSelectedCellCoords: currentCellCoords,
+          };
+        }),
+
+      moveLatestSelectedCell: (direction) =>
+        set(({ latestSelectedCellCoords, remarkedCellCoords }) => {
+          if (!remarkedCellCoords) return {};
+
+          const startCellId = getCellId(remarkedCellCoords);
+
+          const targetCellId = latestSelectedCellCoords
+            ? getCellId(latestSelectedCellCoords)
+            : startCellId;
+
+          const targetCellCoords = getCoordsById(targetCellId);
+
+          const newLatestSelectedCellCoords = getCoordsByDirection(
+            direction,
+            targetCellCoords
+          );
+
+          const newLatestSelectedCellId = getCellId(
+            newLatestSelectedCellCoords
+          );
+
+          const newSelectedCells = getCoordsInRank(
+            startCellId,
+            newLatestSelectedCellId
+          );
+
+          return {
+            selectedCellsCoords: newSelectedCells,
+            latestSelectedCellCoords: newLatestSelectedCellCoords,
+          };
+        }),
+
+      unmarkSelectedCells: () =>
+        set({ selectedCellsCoords: [], latestSelectedCellCoords: null }),
+
+      setIsSelecting: (value) => set({ isSelecting: value }),
+
+      setRemarkedCellCoords: (cell) => set({ remarkedCellCoords: cell }),
+
+      setFocusedCellCoords: (cell) => set({ focusedCellCoords: cell }),
+
+      setSelectedCellsCoords: (coords) =>
+        set(() => {
+          const selectedCellsCoords = [...new Set(coords)];
+
+          return {
+            selectedCellsCoords,
+            latestSelectedCellCoords:
+              selectedCellsCoords[selectedCellsCoords.length - 1],
+          };
+        }),
+
+      addCellsToSelection: (newCell) =>
+        set((state) => {
+          const selectedCellsCoords = [
+            ...new Set([...state.selectedCellsCoords, newCell]),
+          ];
+
+          return { selectedCellsCoords, latestSelectedCellCoords: newCell };
+        }),
+
+      cleanSelectedCellsContent: () => {
+        const { updateCells, selectedCellsCoords } = get();
+
+        updateCells(
+          selectedCellsCoords.map((coords) => ({ coords, newValue: '' }))
+        );
+      },
+
+      setClipboardCellsCoords: (coords) =>
+        set({ clipboardCellsCoords: coords }),
+
+      setClipboardAction: (action) => set({ clipboardAction: action }),
+
+      exportSheet: () => {
+        const { colsQty, rowsQty, name, sheet } = get();
+
+        return JSON.stringify({ colsQty, name, rowsQty, sheet });
+      },
+
+      importSheet: (json: string) => {
+        const parsedState = JSON.parse(json);
+        set(parsedState); // Reemplaza el estado actual con el importado
+      },
+
+      setName: (name) => set({ name }),
+
+      newSheet: (
+        name,
+        rowsQty = INITIAL_ROWS_QTY,
+        colsQty = INITIAL_COLS_QTY
+      ) =>
+        set({
+          ...defaultState,
+          name,
+          rowsQty,
+          colsQty,
+          sheet: createSheet(rowsQty, colsQty),
+        }),
     }),
-
-  moveLatestSelectedCell: (direction) =>
-    set(({ latestSelectedCellCoords, remarkedCellCoords }) => {
-      if (!remarkedCellCoords) return {};
-
-      const startCellId = getCellId(remarkedCellCoords);
-
-      const targetCellId = latestSelectedCellCoords
-        ? getCellId(latestSelectedCellCoords)
-        : startCellId;
-
-      const targetCellCoords = getCoordsById(targetCellId);
-
-      const newLatestSelectedCellCoords = getCoordsByDirection(
-        direction,
-        targetCellCoords
-      );
-
-      const newLatestSelectedCellId = getCellId(newLatestSelectedCellCoords);
-
-      const newSelectedCells = getCoordsInRank(
-        startCellId,
-        newLatestSelectedCellId
-      );
-
-      return {
-        selectedCellsCoords: newSelectedCells,
-        latestSelectedCellCoords: newLatestSelectedCellCoords,
-      };
-    }),
-
-  unmarkSelectedCells: () =>
-    set({ selectedCellsCoords: [], latestSelectedCellCoords: null }),
-
-  setIsSelecting: (value) => set({ isSelecting: value }),
-
-  setRemarkedCellCoords: (cell) => set({ remarkedCellCoords: cell }),
-
-  setFocusedCellCoords: (cell) => set({ focusedCellCoords: cell }),
-
-  setSelectedCellsCoords: (coords) =>
-    set(() => {
-      const selectedCellsCoords = [...new Set(coords)];
-
-      return {
-        selectedCellsCoords,
-        latestSelectedCellCoords:
-          selectedCellsCoords[selectedCellsCoords.length - 1],
-      };
-    }),
-
-  addCellsToSelection: (newCell) =>
-    set((state) => {
-      const selectedCellsCoords = [
-        ...new Set([...state.selectedCellsCoords, newCell]),
-      ];
-
-      return { selectedCellsCoords, latestSelectedCellCoords: newCell };
-    }),
-
-  cleanSelectedCellsContent: () => {
-    const { updateCells, selectedCellsCoords } = get();
-
-    updateCells(
-      selectedCellsCoords.map((coords) => ({ coords, newValue: '' }))
-    );
-  },
-
-  setClipboardCellsCoords: (coords) => set({ clipboardCellsCoords: coords }),
-
-  setClipboardAction: (action) => set({ clipboardAction: action }),
-}));
+    {
+      name: LocalStorageEnum.SHEET,
+      partialize: (state) =>
+        ({
+          ...defaultState,
+          name: state.name,
+          colsQty: state.colsQty,
+          rowsQty: state.rowsQty,
+          sheet: state.sheet,
+        }) as State & Actions, // Guardar solo una parte del estado
+    }
+  )
+);
