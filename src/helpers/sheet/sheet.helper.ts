@@ -21,19 +21,16 @@ export const getCell = (coords: Coords, sheet: ISheet) => {
   return sheet[coords.y][coords.x];
 };
 
-export const getCoordsById = (
-  cellId: string
-): {
-  x: number;
-  y: number;
-} => {
+export const getCoordsById = (cellId: string): Coords | undefined => {
   // Validar el formato de la celda
   const match = cellId.match(/^([A-Z]+)(\d+)$/);
 
   if (!match) {
-    throw new Error(
+    console.error(
       'Invalid cell ID format. Must be in the format "LetterNumber" (e.g., A1, BA12).'
     );
+
+    return;
   }
 
   const [, letter, number] = match;
@@ -42,16 +39,29 @@ export const getCoordsById = (
   const x = getXCoordFromLetter(letter);
   const y = getYCoordFromNumber(number);
 
+  if (typeof y === 'undefined') {
+    console.error(`Invalid coordinate for number ${number}`);
+    return;
+  }
+
   return {
     x, // Coordenada X basada en la letra
     y, // Coordenada Y basada en el número
   };
 };
 
-export const getYCoordFromNumber = (numberStr: string): number => {
+export const getYCoordFromNumber = (numberStr: string): number | undefined => {
   const numParsed = Number(numberStr.trim());
-  if (isNaN(numParsed)) throw new Error('numberStr must be a number');
-  if (numParsed <= 0) throw new Error('numberStr must be greater than 0');
+
+  if (isNaN(numParsed)) {
+    console.error('Invalid number format. Must be a number.');
+    return;
+  }
+  if (numParsed <= 0) {
+    console.error('numberStr must be greater than 0');
+    return;
+  }
+
   return numParsed - 1;
 };
 
@@ -70,8 +80,11 @@ export const getNumberFromYCoord = (y: number): number => {
   return y + 1;
 };
 
-export const getLetterFromXCoord = (x: number): string => {
-  if (x < 0) throw new Error('x must be greater than 0');
+export const getLetterFromXCoord = (x: number): string | undefined => {
+  if (x < 0) {
+    console.error('x must be greater than 0');
+    return;
+  }
 
   let letter = '';
   let i = x;
@@ -104,7 +117,7 @@ export const createSheet = (rowsQty: number, colsQty: number): ISheet =>
 
 export const getSheetLetters = (colsQty: number): ICellSpecial[] => {
   return Array.from({ length: colsQty }, (_, x) => ({
-    name: getLetterFromXCoord(x).toString(),
+    name: getLetterFromXCoord(x)!.toString(),
     coord: x,
   }));
 };
@@ -155,6 +168,14 @@ export const getCellFromId = (
   if (!cellId) return;
 
   const coords = getCoordsById(cellId);
+
+  if (!coords) {
+    console.error(
+      'Invalid cell ID format. Must be in the format "LetterNumber" (e.g., A1, BA12).'
+    );
+    return;
+  }
+
   const cell = getCell(coords, sheet);
 
   return cell;
@@ -178,6 +199,8 @@ export const getCoordsInRank = (
 ): Coords[] => {
   const startCoords = typeof start === 'string' ? getCoordsById(start) : start;
   const endCoords = typeof end === 'string' ? getCoordsById(end) : end;
+
+  if (!startCoords || !endCoords) return [];
 
   const startX = Math.min(startCoords.x, endCoords.x);
   const startY = Math.min(startCoords.y, endCoords.y);

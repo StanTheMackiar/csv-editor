@@ -1,6 +1,7 @@
 import { CELL_REGEX, NUMBER_REGEX } from '@/helpers/constants/regex.constans';
 import {
   CellRef,
+  ICell,
   ISheet,
   ParseExpressionReturn,
 } from '@/types/sheet/cell/cell.types';
@@ -10,12 +11,14 @@ export const parseExpression = (
   value: string,
   sheet: ISheet
 ): ParseExpressionReturn => {
+  const cells: ICell[] = [];
   const refs: CellRef[] = [];
   const isFunction = value.startsWith('=');
 
   if (!isFunction) {
     return {
       parsedExp: value,
+      cells,
       refs,
     };
   }
@@ -39,7 +42,8 @@ export const parseExpression = (
       const updatedContent = innerContent.replace(
         /\{\{([A-Z]+[0-9]+)\}\}/g, // Detecta "{{CELDA}}"
         (original: string, cellId: string) => {
-          const { x, y } = getCoordsById(cellId);
+          const coords = getCoordsById(cellId);
+          if (!coords) return original;
 
           refs.push({
             start: offset + 1 + innerContent.indexOf(original),
@@ -47,8 +51,15 @@ export const parseExpression = (
             ref: cellId,
           });
 
-          const cell = getCell({ x, y }, sheet);
-          const computedValue = cell ? cell.computedValue || cell.value : '';
+          const cell = getCell(coords, sheet);
+          if (cell) {
+            cells.push(cell);
+          }
+
+          const computedValue =
+            typeof cell?.computedValue !== 'undefined'
+              ? (cell.computedValue ?? '')
+              : (cell?.value ?? '');
 
           return computedValue; // Sustituye por el valor de la celda
         }
@@ -83,6 +94,10 @@ export const parseExpression = (
         const startCoords = getCoordsById(startId);
         const endCoords = getCoordsById(endId);
 
+        if (!startCoords || !endCoords) {
+          return original;
+        }
+
         const rangeRef = `${startId}:${endId}`;
         refs.push({
           start: offset + 1,
@@ -95,7 +110,15 @@ export const parseExpression = (
         for (let y = startCoords.y; y <= endCoords.y; y++) {
           for (let x = startCoords.x; x <= endCoords.x; x++) {
             const cell = getCell({ x, y }, sheet);
-            const computedValue = cell ? cell.computedValue || cell.value : '';
+
+            if (cell) {
+              cells.push(cell);
+            }
+
+            const computedValue =
+              typeof cell?.computedValue !== 'undefined'
+                ? (cell.computedValue ?? '')
+                : (cell?.value ?? '');
 
             const isNumber = NUMBER_REGEX.test(computedValue);
 
@@ -108,7 +131,9 @@ export const parseExpression = (
         return values.join(',');
       } else {
         const cellId = `${startCol}${startRow}`;
-        const { x, y } = getCoordsById(cellId);
+        const coords = getCoordsById(cellId);
+
+        if (!coords) return original;
 
         refs.push({
           start: offset + 1,
@@ -116,9 +141,16 @@ export const parseExpression = (
           ref: cellId,
         });
 
-        const cell = getCell({ x, y }, sheet);
+        const cell = getCell(coords, sheet);
 
-        const computedValue = cell ? cell.computedValue || cell.value : '';
+        if (cell) {
+          cells.push(cell);
+        }
+
+        const computedValue =
+          typeof cell?.computedValue !== 'undefined'
+            ? (cell.computedValue ?? '')
+            : (cell?.value ?? '');
 
         const isNumber = NUMBER_REGEX.test(computedValue);
 
@@ -134,6 +166,7 @@ export const parseExpression = (
   );
 
   return {
+    cells,
     parsedExp: restoredExp,
     refs,
   };

@@ -24,6 +24,7 @@ export type CellRef = {
 };
 
 export type ParseExpressionReturn = {
+  cells: ICell[];
   refs: CellRef[];
   parsedExp: string;
 };

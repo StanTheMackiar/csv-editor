@@ -1,3 +1,4 @@
+import { getCellId } from '@/helpers';
 import { ICell, ISheet } from '../../../types/sheet/cell/cell.types';
 import { MATH_REGEX } from '../../constants/regex.constans';
 import { isValidFuncExpression } from './is-valid-exp-helper';
@@ -35,7 +36,17 @@ export const computeCell = (
       });
     }
 
-    const { parsedExp } = parseExpression(computedValue, sheet);
+    const { parsedExp, cells } = parseExpression(computedValue, sheet);
+
+    const circularDependency = cells.some(
+      (c) => getCellId(c) === getCellId(cell)
+    );
+
+    if (circularDependency) {
+      throw new Error('', {
+        cause: '#CIRCULAR_DEPENDENCY',
+      });
+    }
 
     if (!parsedExp) {
       throw new Error('', {

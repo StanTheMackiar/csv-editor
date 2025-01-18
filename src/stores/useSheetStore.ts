@@ -213,6 +213,8 @@ export const useSheetStore = create(
 
           const targetCellCoords = getCoordsById(targetCellId);
 
+          if (!targetCellCoords) return {};
+
           const newLatestSelectedCellCoords = getCoordsByDirection(
             direction,
             targetCellCoords

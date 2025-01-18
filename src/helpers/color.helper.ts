@@ -4,35 +4,29 @@ export const generateRandomColor = (): string => {
 };
 
 const colorSequence = [
-  '#FF0000',
-  '#00FF00',
-  '#0000FF',
-  '#FF00FF',
-  '#00FFFF',
-  '#800000',
-  '#008000',
-  '#000080',
-  '#808000',
-  '#800080',
-  '#008080',
-  '#C0C0C0',
-  '#808080',
-  '#FFA500',
-  '#A52A2A',
-  '#8A2BE2',
-  '#DEB887',
-  '#5F9EA0',
-  '#7FFF00',
-  '#D2691E',
-  '#FF7F50',
-  '#6495ED',
-  '#DC143C',
-  '#00FA9A',
-  '#ADFF2F',
-  '#4B0082',
-  '#FF4500',
-  '#DA70D6',
-  '#B0E0E6',
+  '#FF6F6F', // Vibrant red
+  '#FF9E5F', // Vibrant orange
+  '#70E070', // Vibrant green
+  '#5EC8FF', // Vibrant blue
+  '#9D7EFF', // Vibrant purple
+  '#FF70B8', // Vibrant pink
+  '#F9C66A', // Vibrant peach
+  '#70FFA3', // Vibrant mint green
+  '#6EB3FF', // Vibrant baby blue
+  '#E97EFF', // Vibrant lavender
+  '#FFA970', // Vibrant coral
+  '#F6F76A', // Vibrant soft lemon
+  '#8AC7FF', // Vibrant sky blue
+  '#FF7F92', // Vibrant rose
+  '#B486FF', // Vibrant lilac
+  '#FFDD88', // Vibrant cream
+  '#88E38A', // Vibrant pistachio
+  '#FF92D0', // Vibrant ballet pink
+  '#82DDFF', // Vibrant icy blue
+  '#FFA6CC', // Vibrant blush pink
+  '#D4FF70', // Vibrant pale lime
+  '#FFD17A', // Vibrant sand
+  '#A3C8FF', // Vibrant grey-blue
 ];
 
 export const getColorFromSequence = (input: number): string => {

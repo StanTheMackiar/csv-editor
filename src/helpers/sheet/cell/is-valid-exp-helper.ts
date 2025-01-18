@@ -3,6 +3,12 @@ import {
   GlobalFunctionsEnumES,
 } from '@/enum/global-functions.enum';
 
+export const checkIfEndsWithInvalidChar = (text: string): boolean => {
+  // Expresión regular para caracteres inválidos (no letras ni números)
+  const invalidChars = /[^a-zA-Z0-9]$/;
+  return invalidChars.test(text.trim());
+};
+
 export const isValidFuncExpression = (
   expression: string
 ): { valid: boolean; errorMsg: string } => {
@@ -25,41 +31,50 @@ export const isValidFuncExpression = (
     ...Object.values(GlobalFunctionsEnumES),
   ];
 
-  // // Validar estructura general
-  // const generalRegex =
-  //   /^([\w]+)?\(?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")?(;|,)?([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")*\)?([+\-*/]\(?([A-Z]+[0-9]+|\d+|"[^"]*"|[\w]+\([^\)]*\))\)?)*$/i;
+  // Validar nombres de funciones y sus argumentos
+  const functionRegex = /\b([A-Z]+)\((.*?)\)/gi; // Detectar funciones con sus argumentos
+  const contentWithoutFunctions = content.replace(functionRegex, ''); // Quitar funciones del contenido para validar rangos fuera
 
-  // if (!generalRegex.test(content)) {
-  //   return { valid: false, errorMsg: '#INVALID_GENERAL_FORMAT' };
-  // }
+  // Detectar si hay rangos de celdas fuera de funciones
+  const rangeRegex = /\b[A-Z]+[0-9]+:[A-Z]+[0-9]+\b/gi;
+  const invalidRanges = Array.from(
+    contentWithoutFunctions.matchAll(rangeRegex)
+  );
 
-  // Validar nombres de funciones
-  const functionMatches = Array.from(content.matchAll(/\b([A-Z]+)\(/gi));
-  const functionNames = functionMatches.map((m) => m[1].toUpperCase());
-
-  for (const fn of functionNames) {
-    if (
-      !validFunctions.includes(fn as GlobalFunctionsEnumEN) &&
-      !validFunctions.includes(fn as GlobalFunctionsEnumES)
-    ) {
-      return { valid: false, errorMsg: `#INVALID_FUNCTION_NAME (${fn})` };
-    }
+  if (invalidRanges.length > 0) {
+    return {
+      valid: false,
+      errorMsg: `#RANGE_OUTSIDE_FUNCTION (${invalidRanges[0][0]})`,
+    };
   }
 
-  // Validar argumentos de funciones
-  const argsRegex = /([A-Z]+)\((.*?)\)/gi; // Extraer contenido dentro de paréntesis
-  const argsMatches = Array.from(content.matchAll(argsRegex));
+  // Validar nombres de funciones y argumentos
+  const functionMatches = Array.from(content.matchAll(functionRegex));
 
-  for (const match of argsMatches) {
+  for (const match of functionMatches) {
+    const functionName = match[1].toUpperCase();
     const args = match[2]; // Contenido dentro de los paréntesis
-    if (
-      args &&
-      !/^([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")(;|,)?(.*?)$/.test(args)
-    ) {
+
+    if (!validFunctions.includes(functionName as GlobalFunctionsEnumEN)) {
       return {
         valid: false,
-        errorMsg: `#INVALID_ARGUMENTS_IN_FUNCTION (${match[1]})`,
+        errorMsg: `#INVALID_FUNCTION_NAME (${functionName})`,
       };
+    }
+
+    // Validar múltiples rangos o argumentos separados por `;` o `,`
+    const argsList = args.split(/;|,/).map((arg) => arg.trim());
+
+    for (const arg of argsList) {
+      if (
+        arg && // Argumento no vacío
+        !/^([A-Z]+[0-9]+(:[A-Z]+[0-9]+)?|\d+|"[^"]*")$/.test(arg)
+      ) {
+        return {
+          valid: false,
+          errorMsg: `#INVALID_ARGUMENTS_IN_FUNCTION (${functionName})`,
+        };
+      }
     }
   }
 

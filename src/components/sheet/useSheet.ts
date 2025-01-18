@@ -1,6 +1,7 @@
 import { getColorFromSequence } from '@/helpers/color.helper';
 import { parseExpression } from '@/helpers/sheet/cell/parse-expression.helper';
 import {
+  getCell,
   getCoordsById,
   getCoordsInRank,
   getSheetLetters,
@@ -44,10 +45,8 @@ export const useSheet = () => {
 
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const focusedValue = focusedCell
-      ? sheet[focusedCell?.y][focusedCell?.x].value
-      : undefined;
+  const remarkFunctionCells = useCallback(() => {
+    const focusedValue = focusedCell && getCell(focusedCell, sheet)?.value;
 
     if (!focusedValue || !functionMode) {
       setFunctionModeCells([]);
@@ -76,6 +75,8 @@ export const useSheet = () => {
       } else {
         const coords = getCoordsById(startCellId);
 
+        if (!coords) return;
+
         functionModeCells.push({
           coords,
           color,
@@ -85,6 +86,10 @@ export const useSheet = () => {
 
     setFunctionModeCells(functionModeCells);
   }, [focusedCell, functionMode, setFunctionModeCells, sheet]);
+
+  useEffect(() => {
+    remarkFunctionCells();
+  }, [remarkFunctionCells]);
 
   const sheetLetters = useMemo(() => getSheetLetters(colsQty), [colsQty]);
   const sheetNumbers = useMemo(() => getSheetNumbers(rowsQty), [rowsQty]);

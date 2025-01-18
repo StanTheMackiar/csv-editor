@@ -1,39 +1,9 @@
-export const getAbsoluteCursorPosition = (
-  focusedCellInputRef: HTMLDivElement | null | undefined
-) => {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0 || !focusedCellInputRef)
-    return null;
+import { wait } from './promise/wait.helper';
 
-  const range = selection.getRangeAt(0);
-  const { startContainer, startOffset } = range;
+export class CaretPosition {
+  constructor(private node: HTMLDivElement | null | undefined) {}
 
-  let position = startOffset;
-  let currentNode = startContainer;
-
-  // Recorremos los nodos hermanos anteriores para calcular la posición absoluta
-  while (currentNode && currentNode !== focusedCellInputRef) {
-    while (currentNode.previousSibling) {
-      currentNode = currentNode.previousSibling;
-      position += currentNode.textContent?.length || 0;
-    }
-    currentNode = currentNode.parentNode as Node;
-  }
-
-  return position;
-};
-
-export const setAbsoluteCursorPosition = (
-  element: HTMLDivElement | null | undefined,
-  targetPosition: number
-) => {
-  if (!element) return;
-
-  const selection = window.getSelection();
-  if (!selection) return;
-
-  // Función recursiva para encontrar el nodo y offset correctos
-  const findNodeAndOffset = (
+  private findNodeAndOffset = (
     node: Node,
     position: number
   ): { node: Node; offset: number } | null => {
@@ -51,7 +21,10 @@ export const setAbsoluteCursorPosition = (
 
       if (currentPosition + length >= position) {
         // La posición objetivo está en este nodo o sus hijos
-        const result = findNodeAndOffset(childNode, position - currentPosition);
+        const result = this.findNodeAndOffset(
+          childNode,
+          position - currentPosition
+        );
         if (result) return result;
       }
 
@@ -61,14 +34,65 @@ export const setAbsoluteCursorPosition = (
     return null;
   };
 
-  const result = findNodeAndOffset(element, targetPosition);
+  get() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
 
-  if (result) {
-    const range = document.createRange();
-    range.setStart(result.node, result.offset);
-    range.collapse(true);
+    const range = selection.getRangeAt(0);
+    const { startContainer, startOffset } = range;
 
-    selection.removeAllRanges();
-    selection.addRange(range);
+    let position = startOffset;
+    let currentNode = startContainer;
+
+    // Recorremos los nodos hermanos anteriores para calcular la posición absoluta
+    while (currentNode && currentNode !== this.node) {
+      while (currentNode.previousSibling) {
+        currentNode = currentNode.previousSibling;
+        position += currentNode.textContent?.length || 0;
+      }
+      currentNode = currentNode.parentNode as Node;
+    }
+
+    return position;
   }
-};
+
+  async set(targetPosition: number, waitTime?: number) {
+    const selection = window.getSelection();
+    if (!selection || !this.node) return;
+
+    const execute = () => {
+      if (!this.node) return;
+
+      const result = this.findNodeAndOffset(this.node, targetPosition);
+
+      if (result) {
+        const range = document.createRange();
+        range.setStart(result.node, result.offset);
+        range.collapse(true);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    };
+
+    if (waitTime) {
+      await wait(waitTime).then(execute);
+    } else {
+      execute();
+    }
+  }
+
+  /**
+   * Devuelve el nodo en el que está el cursor actualmente.
+   * @returns El nodo donde está el cursor o null si no se encuentra un rango.
+   */
+  getCurrentCaretNode() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+
+    const range = selection.getRangeAt(0);
+    const { startContainer } = range;
+
+    return startContainer;
+  }
+}

@@ -12,6 +12,7 @@ export * from './global-functions/global-functions.helper';
 export * from './html-parser.helper';
 export * from './input-is-focused.helper';
 export * from './keys/keys.helpers';
+export * from './promise/wait.helper';
 export * from './sheet/cell/cell.helper';
 export * from './sheet/cell/is-valid-exp-helper';
 export * from './sheet/cell/parse-expression.helper';

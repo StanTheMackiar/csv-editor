@@ -1,9 +1,7 @@
 'use client';
 
-import ContentEditable, {
-  ContentEditableEvent,
-} from '@/components/core/input/ContentEditable';
-import { getCell, getCellId, parseTextToHTML } from '@/helpers';
+import { ContentEditableEvent } from '@/components/core/input/ContentEditable';
+import { CaretPosition, getCell, getCellId, parseTextToHTML } from '@/helpers';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import clsx from 'clsx';
@@ -40,13 +38,22 @@ export const FunctionBar: FC = () => {
   );
 
   const inputRef = useRef<HTMLDivElement>(null);
+  const cursorPosition = useRef<number>();
 
   const cell = getCell(remarkedCellCoords, sheet);
 
   const onChange = (e: ContentEditableEvent) => {
     if (!cell) throw new Error('Cell not found');
 
+    const caretPosition = new CaretPosition(inputRef.current).get();
     const text = (e.currentTarget.textContent as string) ?? '';
+
+    cursorPosition.current = caretPosition || text.length;
+
+    const newIsFunctionMode = text.startsWith('=');
+    if (isFunctionMode !== newIsFunctionMode) {
+      setFunctionMode(newIsFunctionMode);
+    }
 
     updateCells(
       [
@@ -62,13 +69,14 @@ export const FunctionBar: FC = () => {
     );
   };
 
+  //? Se encarga de mantener el cursor a la derecha al escribir
   useEffect(() => {
-    if (!functionBarIsFocused || !cell?.value) return;
+    if (!functionBarIsFocused) return;
 
-    const enableFuncMode = cell.value.startsWith('=');
-
-    setFunctionMode(enableFuncMode);
-  }, [cell?.value, functionBarIsFocused, setFunctionMode]);
+    const caret = new CaretPosition(inputRef.current);
+    caret.set(cursorPosition.current || cell?.value.length || 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cell?.value]);
 
   const html = useMemo<string>(() => {
     if (!cell?.value) return '';
@@ -85,6 +93,7 @@ export const FunctionBar: FC = () => {
     setFocusedCellCoords(null);
     setFunctionMode(false);
     setFunctionBarIsFocused(false);
+
     recomputeSheet();
   };
 
@@ -94,6 +103,15 @@ export const FunctionBar: FC = () => {
     setFocusedCellCoords({ x: cell.x, y: cell.y });
     setFunctionBarIsFocused(true);
     setFocusedCellInputRef(inputRef);
+
+    const isFunction = cell.value.startsWith('=');
+
+    if (isFunction) {
+      setFunctionMode(isFunction);
+
+      const caret = new CaretPosition(inputRef.current);
+      caret.set(cell.value.length, 5);
+    }
   };
 
   const showFunctionQuestionMark = isFunctionMode && functionBarIsFocused;
@@ -131,13 +149,14 @@ export const FunctionBar: FC = () => {
 
         <Icon icon="material-symbols-light:function" />
 
-        <ContentEditable
+        <div
+          contentEditable
           onBlur={onBlur}
-          innerRef={inputRef}
+          ref={inputRef}
           onFocus={onFocus}
           className="flex-1 border-none outline-none text-gray-800 text-sm"
-          html={html}
-          onChange={onChange}
+          dangerouslySetInnerHTML={{ __html: html }}
+          onInput={onChange}
         />
       </div>
     </section>

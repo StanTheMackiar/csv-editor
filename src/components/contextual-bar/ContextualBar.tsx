@@ -101,7 +101,7 @@ export const ContextualBar: FC = () => {
             onClick={openRenameDialog}
             className="cursor-pointer text-base py-1 font-medium text-white"
           >
-            {name}
+            {`${name}.csv`}
           </h1>
         </div>
 

@@ -83,14 +83,6 @@ export const useCell = ({ cell }: CellProps) => {
   }, [remarkedCell, isSelected, selectedCells, cell]);
 
   useEffect(() => {
-    if (!inputFocused) return;
-
-    const enableFuncMode = cell.value.startsWith('=');
-
-    setFunctionMode(enableFuncMode);
-  }, [cell.value, inputFocused, setFocusedCellRef, setFunctionMode]);
-
-  useEffect(() => {
     if (isRemarked) setRemarkedCellRef(inputRef);
   }, [isRemarked, inputRef, setRemarkedCellRef]);
 
@@ -111,11 +103,18 @@ export const useCell = ({ cell }: CellProps) => {
       y: cell.y,
     });
 
+    const enableFuncMode = cell.value.startsWith('=');
+    setFunctionMode(enableFuncMode);
     setFocusedCellRef(inputRef);
   };
 
   const onChange = (e: ContentEditableEvent) => {
     const text = (e.currentTarget.textContent as string) ?? '';
+
+    const newIsFunctionMode = text.startsWith('=') ?? false;
+    if (isFunctionMode !== newIsFunctionMode) {
+      setFunctionMode(newIsFunctionMode);
+    }
 
     updateCells(
       [

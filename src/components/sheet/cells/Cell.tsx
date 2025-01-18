@@ -34,6 +34,7 @@ export const Cell: FC<CellProps> = ({ cell }) => {
   const showFunctionQuestionMark = isFunctionMode && !functionBarIsFocused;
 
   const onClick = () => {
+    if (inputFocused) return;
     // eslint-disable-next-line no-console
     console.log({
       ...cell,
