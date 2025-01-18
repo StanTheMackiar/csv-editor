@@ -20,6 +20,7 @@ export const useCell = ({ cell }: CellProps) => {
     focusedCell,
     recomputeSheet,
     clipboardCellsCoords,
+    functionBarIsFocused,
   ] = useSheetStore(
     useShallow((state) => {
       return [
@@ -35,6 +36,7 @@ export const useCell = ({ cell }: CellProps) => {
         state.focusedCellCoords,
         state.recomputeSheet,
         state.clipboardCellsCoords,
+        state.functionBarIsFocused,
       ];
     })
   );
@@ -93,8 +95,6 @@ export const useCell = ({ cell }: CellProps) => {
   }, [isRemarked, inputRef, setRemarkedCellRef]);
 
   const handleBlur: FocusEventHandler<HTMLInputElement> = () => {
-    inputRef.current?.blur();
-
     setFocusedCellRef(null);
     setFocusedCell(null);
     setFunctionMode(false);
@@ -134,17 +134,21 @@ export const useCell = ({ cell }: CellProps) => {
   const html = useMemo<string>(() => {
     const cellHasFunction = cell.value.startsWith('=');
 
-    const parsedValue = parseTextToHTML(String(cell.value));
     const { value, computedValue } = cell;
 
-    if (inputFocused) return parsedValue;
-    if (cellHasFunction) return computedValue ?? value;
-    else return value;
+    let text = '';
+
+    if (inputFocused) text = String(cell.value);
+    else if (cellHasFunction) text = computedValue ?? value;
+    else text = value;
+
+    return parseTextToHTML(text);
   }, [cell, inputFocused]);
 
   return {
     cellId,
     cellIsOnClipboard,
+    functionBarIsFocused,
     functionModeCell,
     html,
     inputFocused,

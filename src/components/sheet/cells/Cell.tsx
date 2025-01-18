@@ -1,6 +1,7 @@
 'use client';
 
 import ContentEditable from '@/components/core/input/ContentEditable';
+import { getCellId, parseTextToHTML } from '@/helpers';
 import clsx from 'clsx';
 import { FC } from 'react';
 import { ICell } from '../../../types/sheet/cell/cell.types';
@@ -11,11 +12,12 @@ export interface CellProps {
   cell: ICell;
 }
 
-export const Cell: FC<CellProps> = (props) => {
+export const Cell: FC<CellProps> = ({ cell }) => {
   const {
     cellId,
     cellIsOnClipboard,
     functionModeCell,
+    functionBarIsFocused,
     html,
     inputFocused,
     inputRef,
@@ -27,21 +29,33 @@ export const Cell: FC<CellProps> = (props) => {
     onChange,
     onDoubleClick,
     onFocus,
-  } = useCell(props);
+  } = useCell({ cell });
+
+  const showFunctionQuestionMark = isFunctionMode && !functionBarIsFocused;
+
+  const onClick = () => {
+    // eslint-disable-next-line no-console
+    console.log({
+      ...cell,
+      id: getCellId(cell),
+      valueHtml: parseTextToHTML(cell.value),
+    });
+  };
 
   return (
     <td
+      onClick={onClick}
       onDoubleClick={onDoubleClick}
       id={`${cellId}-cell`}
       className={clsx(s['sheet-cell'])}
     >
       <div
         className={clsx(
-          s['function-mode-span'],
-          isFunctionMode ? 'flex' : 'hidden'
+          'flex items-center z-10 justify-center absolute p-1 bg-blue-500 left-[-20px] translate-y-[-50%]',
+          showFunctionQuestionMark ? 'flex' : 'hidden'
         )}
       >
-        <span>?</span>
+        <span className="text-white text-sm">?</span>
       </div>
 
       <ContentEditable
@@ -49,6 +63,7 @@ export const Cell: FC<CellProps> = (props) => {
         onFocus={onFocus}
         innerRef={inputRef}
         id={`${cellId}-cellinput`}
+        disabled={functionBarIsFocused}
         onChange={onChange}
         className={clsx(s['sheet-input'], {
           [s['cell-shadow']]: isShadowed,

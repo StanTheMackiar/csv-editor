@@ -64,9 +64,8 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       const clickedCell = getCellFromMouseEvent(sheet, e);
       if (!clickedCell) return;
 
-      const clickedCellId = clickedCell && getCellId(clickedCell);
-      const remarkedCell =
-        remarkedCellCoords && getCell(remarkedCellCoords, sheet);
+      const clickedCellId = getCellId(clickedCell);
+      const remarkedCell = getCell(remarkedCellCoords, sheet);
 
       if (!isSelectingFunctionMode) {
         setIsSelectingFunctionMode(true);
@@ -79,7 +78,7 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       const { refs: refsFound } = parseExpression(remarkedCell.value, sheet);
 
       const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
-      if (!cursorPosition) return;
+      if (cursorPosition === null) return;
 
       const lastRefFound: CellRef | undefined =
         refsFound?.[refsFound.length - 1];
@@ -240,7 +239,8 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
         const { refs } = parseExpression(remarkedCell.value, sheet);
         const cursorPosition = getAbsoluteCursorPosition(focusedCellInputRef);
 
-        if (!cursorPosition) throw new Error('Cursor position not found');
+        if (cursorPosition === null)
+          throw new Error('Cursor position not found');
 
         const lastRefFound = refs[refs.length - 1];
 

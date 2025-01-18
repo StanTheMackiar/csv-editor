@@ -158,6 +158,7 @@ export const usePressedKeys = () => {
           newValue: '',
         },
       ]);
+
       remarkedElement.focus();
     }
   }, [

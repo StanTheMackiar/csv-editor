@@ -12,7 +12,7 @@ import {
 } from '@/helpers/constants/sheet-config.helper';
 import { useMouseEvents, usePressedKeys } from '@/hooks';
 import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
-import { SheetContextualMenu } from './contextual-menu/SheetContextualMenu';
+import { SheetContextualMenu } from '../menu/contextual-menu/SheetContextualMenu';
 import s from './Sheet.module.css';
 import { useSheet } from './useSheet';
 import { useSheetClipboard } from './useSheetClipboard';
@@ -80,7 +80,7 @@ export const Sheet: FC = () => {
     <div
       onContextMenu={openContextualMenu}
       ref={sheetRef}
-      className={s['table-container']}
+      className="w-full bg-slate-100 overflow-auto relative max-h-[100vh]"
     >
       <table
         className={clsx(s.sheet, {

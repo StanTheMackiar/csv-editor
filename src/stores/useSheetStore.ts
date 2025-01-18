@@ -2,6 +2,7 @@ import { LocalStorageEnum } from '@/enum/local-storage.enum';
 import { computeCell } from '@/helpers';
 import {
   INITIAL_COLS_QTY,
+  INITIAL_REMARKED_CELL_COORDS,
   INITIAL_ROWS_QTY,
 } from '@/helpers/constants/sheet-config.helper';
 import { RefObject } from 'react';
@@ -24,13 +25,14 @@ import {
 type ClipboardAction = 'copy' | 'cut';
 export type UpdateCellData = { coords: Coords; newValue: string };
 export type Direction = 'left' | 'up' | 'down' | 'right';
+
 interface State {
   name: string;
   colsQty: number;
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
   rowsQty: number;
-  remarkedCellCoords: Coords | null;
+  remarkedCellCoords: Coords;
   remarkedCellInputRef: RefObject<HTMLDivElement> | null;
   focusedCellCoords: Coords | null;
   focusedCellInputRef: RefObject<HTMLDivElement> | null;
@@ -41,6 +43,7 @@ interface State {
   clipboardCellsCoords: Coords[];
   clipboardAction: ClipboardAction;
   sheet: ICell[][];
+  functionBarIsFocused: boolean;
 }
 
 interface Actions {
@@ -50,7 +53,7 @@ interface Actions {
   setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setIsSelecting: (value: boolean) => void;
-  setRemarkedCellCoords: (coords: Coords | null) => void;
+  setRemarkedCellCoords: (coords: Coords) => void;
   setSelectedCellsCoords: (coords: Coords[]) => void;
   setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
   setIsSelectingFunctionMode: (value: boolean) => void;
@@ -68,6 +71,7 @@ interface Actions {
   exportSheet: () => string;
   setName: (name: string) => void;
   newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
+  setFunctionBarIsFocused: (value: boolean) => void;
 }
 
 export const defaultState: State = {
@@ -81,12 +85,13 @@ export const defaultState: State = {
   isSelectingFunctionMode: false,
   latestSelectedCellCoords: null,
   focusedCellCoords: null,
-  remarkedCellCoords: null,
+  remarkedCellCoords: INITIAL_REMARKED_CELL_COORDS,
   remarkedCellInputRef: null,
-  selectedCellsCoords: [],
+  selectedCellsCoords: [INITIAL_REMARKED_CELL_COORDS],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
   clipboardCellsCoords: [],
   clipboardAction: 'copy',
+  functionBarIsFocused: false,
 };
 
 export const useSheetStore = create(
@@ -295,6 +300,8 @@ export const useSheetStore = create(
           colsQty,
           sheet: createSheet(rowsQty, colsQty),
         }),
+
+      setFunctionBarIsFocused: (value) => set({ functionBarIsFocused: value }),
     }),
     {
       name: LocalStorageEnum.SHEET,

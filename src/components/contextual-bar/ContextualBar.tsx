@@ -104,7 +104,8 @@ export const ContextualBar: FC = () => {
             {name}
           </h1>
         </div>
-        <div className="sticky top-0 flex px-2 bg-gray-50 border-b border-gray-300">
+
+        <div className="sticky top-0 flex px-2 bg-gray-200 border-b border-gray-300">
           {contextualBar.map((item) => (
             <Menu as="nav" key={item.name}>
               <MenuButton className="inline-flex items-center gap-2 py-1 px-5 text-sm font-medium text-gray-800 shadow-inner focus:outline-none data-[focus]:outline-1 data-[focus]:outline-white">
