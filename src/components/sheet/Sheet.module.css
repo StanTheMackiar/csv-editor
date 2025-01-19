@@ -1,5 +1,8 @@
-.sheet {
+.sheet-table {
   table-layout: fixed;
+  top: 0;
+  border-collapse: collapse;
+  left: 0;
   min-width: min-content;
   background-color: white;
   width: max-content;
@@ -7,37 +10,12 @@
   cursor: default;
 }
 
-.sheet-head {
-  position: sticky;
-  z-index: 5;
-  top: 0;
-}
-
-.sheet-row {
-  width: 100%;
-  position: relative;
-  margin-block: 20px;
-}
-
-.sheet-head .sheet-row th:first-child {
-  z-index: 5;
-  background-color: rgb(205, 204, 204);
-  position: sticky;
-  left: 0;
-  top: 0;
-}
-
-.sheet-row td:first-child {
-  width: 40px;
-  position: sticky;
-  left: 0;
-  z-index: 2;
-}
-
 .sheet-header-cell {
   font-weight: bold;
+  font-size: 14px;
+  text-align: center;
   background-color: rgb(236, 236, 236);
-  padding-inline: 12px;
+  min-width: 50px;
   position: relative;
   user-select: none;
 }

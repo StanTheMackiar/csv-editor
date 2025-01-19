@@ -4,29 +4,37 @@ import {
   ROW_DEFAULT_HEIGHT,
   ROW_MIN_HEIGHT,
 } from '@/helpers/constants/sheet-config.helper';
-import { useCallback, useState } from 'react';
+import { useSheetStore } from '@/stores/useSheetStore';
+import { useCallback } from 'react';
+import { useShallow } from 'zustand/shallow';
 import s from './Sheet.module.css';
 
 export const useSheetRedimension = () => {
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
-  const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
+  const [columnStyles, setColumnsStyles, rowsStyles, setRowsStyles] =
+    useSheetStore(
+      useShallow((state) => [
+        state.columnsStyles,
+        state.setColumnsStyles,
+        state.rowsStyles,
+        state.setRowsStyles,
+      ])
+    );
 
   const resizeColumnWidth = useCallback(
     (columnName: string, e: React.MouseEvent) => {
       e.preventDefault();
 
       const startX = e.pageX;
-      const startWidth = columnWidths[columnName] || COLUMN_DEFAULT_WIDTH;
+      const startWidth =
+        columnStyles[columnName]?.width || COLUMN_DEFAULT_WIDTH;
 
       const handleMouseMove = (e: MouseEvent) => {
         const newWidth = Math.max(
           COLUMN_MIN_WIDTH,
           startWidth + (e.pageX - startX)
         );
-        setColumnWidths((prev) => ({
-          ...prev,
-          [columnName]: newWidth,
-        }));
+
+        setColumnsStyles(columnName, { width: newWidth });
       };
 
       const handleMouseUp = () => {
@@ -39,7 +47,7 @@ export const useSheetRedimension = () => {
       document.addEventListener('mouseup', handleMouseUp);
       document.body.classList.add(s['resizing-column']);
     },
-    [columnWidths]
+    [columnStyles, setColumnsStyles]
   );
 
   const resizeRowHeight = useCallback(
@@ -47,17 +55,14 @@ export const useSheetRedimension = () => {
       e.preventDefault();
 
       const startY = e.pageY;
-      const startHeight = rowHeights[rowName] || ROW_DEFAULT_HEIGHT;
+      const startHeight = rowsStyles[rowName]?.height || ROW_DEFAULT_HEIGHT;
 
       const handleMouseMove = (e: MouseEvent) => {
         const newHeight = Math.max(
           ROW_MIN_HEIGHT,
           startHeight + (e.pageY - startY)
         );
-        setRowHeights((prev) => ({
-          ...prev,
-          [rowName]: newHeight,
-        }));
+        setRowsStyles(rowName, { height: newHeight });
       };
 
       const handleMouseUp = () => {
@@ -70,12 +75,10 @@ export const useSheetRedimension = () => {
       document.addEventListener('mouseup', handleMouseUp);
       document.body.classList.add(s['resizing-row']);
     },
-    [rowHeights]
+    [rowsStyles, setRowsStyles]
   );
 
   return {
-    columnWidths,
-    rowHeights,
     resizeColumnWidth,
     resizeRowHeight,
   };

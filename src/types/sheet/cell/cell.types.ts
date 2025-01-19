@@ -3,12 +3,12 @@ export interface ICell extends Coords {
   value: string;
 }
 
+export type ISheet = ICell[][];
+
 export type ICellSpecial = {
   coord: number;
   name: string;
 };
-
-export type ISheet = ICell[][];
 
 export type CellFound = {
   id: string;

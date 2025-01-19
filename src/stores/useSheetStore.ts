@@ -19,12 +19,16 @@ import {
 import {
   Coords,
   FunctionModeCell,
-  ICell,
+  ISheet,
 } from '../types/sheet/cell/cell.types';
 
 type ClipboardAction = 'copy' | 'cut';
 export type UpdateCellData = { coords: Coords; newValue: string };
 export type Direction = 'left' | 'up' | 'down' | 'right';
+export type CellStyle = {
+  width?: number;
+  height?: number;
+};
 
 interface State {
   name: string;
@@ -42,56 +46,64 @@ interface State {
   functionModeCellsCoords: FunctionModeCell[];
   clipboardCellsCoords: Coords[];
   clipboardAction: ClipboardAction;
-  sheet: ICell[][];
+  sheet: ISheet;
   functionBarIsFocused: boolean;
+  cellsStyles: Record<string, CellStyle | undefined>;
+  columnsStyles: Record<string, CellStyle | undefined>;
+  rowsStyles: Record<string, CellStyle | undefined>;
 }
 
 interface Actions {
   addCellsToSelection: (coords: Coords) => void;
-  moveRemarkedCell: (direction: Direction) => void;
-  setFocusedCellCoords: (coords: Coords | null) => void;
-  setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
-  setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
-  setIsSelecting: (value: boolean) => void;
-  setRemarkedCellCoords: (coords: Coords) => void;
-  setSelectedCellsCoords: (coords: Coords[]) => void;
-  setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
-  setIsSelectingFunctionMode: (value: boolean) => void;
-  moveLatestSelectedCell: (direction: Direction) => void;
-  recomputeSheet: () => void;
-  setFunctionMode: (value: boolean) => void;
-  setLatestSelectedCellCoords: (coords: Coords | null) => void;
-  selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
-  unmarkSelectedCells: VoidFunction;
-  updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
   cleanSelectedCellsContent: VoidFunction;
+  exportSheet: () => string;
+  importSheet: (json: string) => void;
+  moveLatestSelectedCell: (direction: Direction) => void;
+  moveRemarkedCell: (direction: Direction) => void;
+  newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
+  recomputeSheet: () => void;
+  selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
   setClipboardAction: (action: ClipboardAction) => void;
   setClipboardCellsCoords: (coords: Coords[]) => void;
-  importSheet: (json: string) => void;
-  exportSheet: () => string;
-  setName: (name: string) => void;
-  newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
+  setFocusedCellCoords: (coords: Coords | null) => void;
+  setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setFunctionBarIsFocused: (value: boolean) => void;
+  setFunctionMode: (value: boolean) => void;
+  setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
+  setIsSelecting: (value: boolean) => void;
+  setIsSelectingFunctionMode: (value: boolean) => void;
+  setLatestSelectedCellCoords: (coords: Coords | null) => void;
+  setName: (name: string) => void;
+  setRemarkedCellCoords: (coords: Coords) => void;
+  setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
+  setSelectedCellsCoords: (coords: Coords[]) => void;
+  unmarkSelectedCells: VoidFunction;
+  updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
+  setColumnsStyles: (columnName: string, style: CellStyle) => void;
+  setRowsStyles: (rowName: string, style: CellStyle) => void;
 }
 
 export const defaultState: State = {
-  name: 'My Sheet',
+  clipboardAction: 'copy',
+  clipboardCellsCoords: [],
   colsQty: INITIAL_COLS_QTY,
-  rowsQty: INITIAL_ROWS_QTY,
+  focusedCellCoords: null,
   focusedCellInputRef: null,
+  functionBarIsFocused: false,
   functionMode: false,
   functionModeCellsCoords: [],
   isSelecting: false,
   isSelectingFunctionMode: false,
   latestSelectedCellCoords: null,
-  focusedCellCoords: null,
+  name: 'My Sheet',
   remarkedCellCoords: INITIAL_REMARKED_CELL_COORDS,
   remarkedCellInputRef: null,
+  rowsQty: INITIAL_ROWS_QTY,
   selectedCellsCoords: [INITIAL_REMARKED_CELL_COORDS],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
-  clipboardCellsCoords: [],
-  clipboardAction: 'copy',
-  functionBarIsFocused: false,
+  cellsStyles: {},
+  columnsStyles: {},
+  rowsStyles: {},
 };
 
 export const useSheetStore = create(
@@ -278,9 +290,17 @@ export const useSheetStore = create(
       setClipboardAction: (action) => set({ clipboardAction: action }),
 
       exportSheet: () => {
-        const { colsQty, rowsQty, name, sheet } = get();
+        const { colsQty, rowsQty, name, sheet, columnsStyles, rowsStyles } =
+          get();
 
-        return JSON.stringify({ colsQty, name, rowsQty, sheet });
+        return JSON.stringify({
+          colsQty,
+          name,
+          rowsQty,
+          sheet,
+          rowsStyles,
+          columnsStyles,
+        });
       },
 
       importSheet: (json: string) => {
@@ -304,6 +324,32 @@ export const useSheetStore = create(
         }),
 
       setFunctionBarIsFocused: (value) => set({ functionBarIsFocused: value }),
+
+      setColumnsStyles: (name, styles) =>
+        set((state) => {
+          return {
+            columnsStyles: {
+              ...state.columnsStyles,
+              [name]: {
+                ...state.columnsStyles[name],
+                ...styles,
+              },
+            },
+          };
+        }),
+
+      setRowsStyles: (name, styles) =>
+        set((state) => {
+          return {
+            rowsStyles: {
+              ...state.rowsStyles,
+              [name]: {
+                ...state.rowsStyles[name],
+                ...styles,
+              },
+            },
+          };
+        }),
     }),
     {
       name: LocalStorageEnum.SHEET,
@@ -314,6 +360,8 @@ export const useSheetStore = create(
           colsQty: state.colsQty,
           rowsQty: state.rowsQty,
           sheet: state.sheet,
+          columnsStyles: state.columnsStyles,
+          rowsStyles: state.rowsStyles,
         }) as State & Actions, // Guardar solo una parte del estado
     }
   )

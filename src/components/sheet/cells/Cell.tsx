@@ -1,8 +1,7 @@
 'use client';
-
 import ContentEditable from '@/components/core/input/ContentEditable';
 import clsx from 'clsx';
-import { FC } from 'react';
+import { FC, memo } from 'react';
 import { ICell } from '../../../types/sheet/cell/cell.types';
 import s from '../Sheet.module.css';
 import { useCell } from './useCell';
@@ -11,7 +10,7 @@ export interface CellProps {
   cell: ICell;
 }
 
-export const Cell: FC<CellProps> = ({ cell }) => {
+export const Cell: FC<CellProps> = memo(({ cell }) => {
   const {
     cellId,
     cellIsOnClipboard,
@@ -88,4 +87,6 @@ export const Cell: FC<CellProps> = ({ cell }) => {
       />
     </td>
   );
-};
+});
+
+Cell.displayName = 'Cell';
