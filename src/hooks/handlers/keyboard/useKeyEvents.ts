@@ -48,7 +48,7 @@ export const usePressedKeys = () => {
 
   const onPressEnter = useCallback(() => {
     if (focusedElement) {
-      remarkedElement?.blur();
+      focusedElement.blur();
       moveRemarkedCell('down');
 
       return;

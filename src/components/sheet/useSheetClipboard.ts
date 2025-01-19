@@ -1,46 +1,27 @@
 import { useClipboardEvents } from '@/hooks';
 import { Coords } from '@/types/sheet/cell/cell.types';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-export const useSheetClipboard = (
-  sheetRef: React.RefObject<HTMLDivElement>
-) => {
+export const useSheetClipboard = () => {
   const { onCopy, onCut, onPaste } = useClipboardEvents();
 
   const [menuPosition, setMenuPosition] = useState<Coords | null>(null);
 
   const openContextualMenu = (event: React.MouseEvent) => {
-    event.preventDefault(); // Evita que se abra el menú contextual del navegador por defecto
+    event.preventDefault();
 
     const { clientX, clientY } = event;
-    setMenuPosition({ x: clientX, y: clientY });
+    const container = event.currentTarget as HTMLElement;
+
+    // Obtener el desplazamiento del contenedor
+    const { left, top } = container.getBoundingClientRect();
+
+    // Ajustar coordenadas al contenedor
+    setMenuPosition({
+      x: clientX - left + container.scrollLeft,
+      y: clientY - top + container.scrollTop,
+    });
   };
-
-  // Cierra el menú al hacer clic fuera
-  const handleClickOutside = () => {
-    setMenuPosition(null);
-  };
-
-  useEffect(() => {
-    document.addEventListener('click', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    const ref = sheetRef.current;
-    if (!ref) return;
-
-    const handleContextMenu = (event: MouseEvent) => {
-      event.preventDefault();
-    };
-
-    ref.addEventListener('contextmenu', handleContextMenu);
-
-    return () => ref.removeEventListener('contextmenu', handleContextMenu);
-  }, [sheetRef]);
 
   return {
     menuPosition,
@@ -49,5 +30,6 @@ export const useSheetClipboard = (
     onCut,
     onPaste,
     openContextualMenu,
+    setMenuPosition,
   };
 };

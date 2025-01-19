@@ -1,7 +1,6 @@
 'use client';
 
 import ContentEditable from '@/components/core/input/ContentEditable';
-import { getCellId, parseTextToHTML } from '@/helpers';
 import clsx from 'clsx';
 import { FC } from 'react';
 import { ICell } from '../../../types/sheet/cell/cell.types';
@@ -33,19 +32,19 @@ export const Cell: FC<CellProps> = ({ cell }) => {
 
   const showFunctionQuestionMark = isFunctionMode && !functionBarIsFocused;
 
-  const onClick = () => {
-    if (inputFocused) return;
-    // eslint-disable-next-line no-console
-    console.log({
-      ...cell,
-      id: getCellId(cell),
-      valueHtml: parseTextToHTML(cell.value),
-    });
-  };
+  // const onClick = () => {
+  //   if (inputFocused || !IS_DEV) return;
+  //   // eslint-disable-next-line no-console
+  //   console.log({
+  //     ...cell,
+  //     id: getCellId(cell),
+  //     valueHtml: parseTextToHTML(cell.value),
+  //   });
+  // };
 
   return (
     <td
-      onClick={onClick}
+      // onClick={onClick}
       onDoubleClick={onDoubleClick}
       id={`${cellId}-cell`}
       className={clsx(s['sheet-cell'])}
@@ -60,6 +59,8 @@ export const Cell: FC<CellProps> = ({ cell }) => {
       </div>
 
       <ContentEditable
+        cursorAtEndOnFocus
+        plainValue={cell.value}
         onBlur={handleBlur}
         onFocus={onFocus}
         innerRef={inputRef}

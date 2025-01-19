@@ -90,6 +90,7 @@ export const useCell = ({ cell }: CellProps) => {
     setFocusedCellRef(null);
     setFocusedCell(null);
     setFunctionMode(false);
+
     recomputeSheet();
   };
 
@@ -98,10 +99,7 @@ export const useCell = ({ cell }: CellProps) => {
   };
 
   const onFocus = () => {
-    setFocusedCell({
-      x: cell.x,
-      y: cell.y,
-    });
+    setFocusedCell(cell);
 
     const enableFuncMode = cell.value.startsWith('=');
     setFunctionMode(enableFuncMode);

@@ -47,7 +47,8 @@ export const Sheet: FC = () => {
     onCut,
     onPaste,
     openContextualMenu,
-  } = useSheetClipboard(sheetRef);
+    setMenuPosition,
+  } = useSheetClipboard();
 
   const contextMenuItems: ContextMenuItem[] = [
     {
@@ -77,8 +78,9 @@ export const Sheet: FC = () => {
   ];
 
   return (
-    <div
+    <section
       onContextMenu={openContextualMenu}
+      onClick={() => setMenuPosition(null)}
       ref={sheetRef}
       className="w-full bg-slate-100 overflow-auto relative max-h-[100vh]"
     >
@@ -162,6 +164,6 @@ export const Sheet: FC = () => {
           menuPosition={menuPosition}
         />
       )}
-    </div>
+    </section>
   );
 };

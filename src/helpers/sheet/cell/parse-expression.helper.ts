@@ -40,7 +40,7 @@ export const parseExpression = (
 
       // Manejo de contenido entre comillas
       const updatedContent = innerContent.replace(
-        /\{\{([A-Z]+[0-9]+)\}\}/g, // Detecta "{{CELDA}}"
+        /&([A-Z]+[0-9]+)/g, // Detecta "&CELDA"
         (original: string, cellId: string) => {
           const coords = getCoordsById(cellId);
           if (!coords) return original;

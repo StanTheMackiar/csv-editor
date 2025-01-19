@@ -4,6 +4,7 @@
   background-color: white;
   width: max-content;
   user-select: none;
+  cursor: default;
 }
 
 .sheet-head {
@@ -42,9 +43,8 @@
 }
 
 .sheet-header-cell.selected {
-  background-color: rgb(32, 117, 173);
+  background-color: rgb(178, 190, 199);
   color: rgb(255, 255, 255);
-  outline: 2px solid rgb(149, 163, 194);
 }
 
 .row-resizer {
@@ -53,7 +53,7 @@
   left: 0;
   width: 100%;
   height: 3px;
-  cursor: row-resize;
+  cursor: ns-resize;
   z-index: 1;
 }
 
@@ -62,25 +62,27 @@
   position: absolute;
   bottom: 3px;
   left: 0;
+  cursor: ns-resize;
   width: 100%;
   height: 3px;
-  background: #e0e0e0;
+  background: #d9d9d9;
   transition: background 0.2s;
 }
 
 /* Efecto hover */
 .row-resizer:hover::after {
   height: 4px;
-  background: #999;
+  cursor: ns-resize;
+  background: #d9d9d9;
 }
 
 /* Mientras se está redimensionando */
 .resizing-row .row-resizer::after {
-  background: #b1b1b1;
+  background: #d9d9d9;
 }
 
 .resizing-row {
-  cursor: col-resize;
+  cursor: ns-resize;
   user-select: none;
 }
 
@@ -90,34 +92,37 @@
   top: 0;
   height: 100%;
   width: 6px;
-  cursor: col-resize;
+  cursor: ew-resize;
   z-index: 1;
 }
 
 .column-resizer::after {
   content: '';
   position: absolute;
-  right: 2px;
+  right: 3px;
+  cursor: ew-resize;
   top: 0;
   height: 100%;
   width: 2px;
-  background: #e0e0e0;
+  background: #d9d9d9;
   transition: background 0.2s;
 }
 
 /* Efecto hover */
 .column-resizer:hover::after {
   width: 4px;
-  background: #999;
+  cursor: ew-resize;
+  background: #d9d9d9;
 }
 
 /* Mientras se está redimensionando */
 .resizing-column .column-resizer::after {
-  background: #b1b1b1;
+  cursor: ew-resize;
+  background: #d9d9d9;
 }
 
 .resizing-column {
-  cursor: col-resize;
+  cursor: ew-resize;
   user-select: none;
 }
 
@@ -145,36 +150,24 @@
   background-color: white;
   z-index: 2;
   overflow: visible;
+  cursor: text;
   /* height: fit-content; */
   width: fit-content;
   overflow: visible;
-  box-shadow: 0 0 0 2px rgb(100, 151, 239);
+  box-shadow: 0 0 1px 2px rgb(141, 167, 211);
 }
 
 .cell-marked {
-  border: 2px solid rgb(18, 64, 162);
+  border: 2px solid rgb(113, 140, 198);
 }
 
 .cell-shadow {
-  background-color: rgb(193, 214, 224);
-  outline: 2px solid rgb(149, 163, 194);
+  background-color: rgb(232, 235, 243);
+  outline: 1px solid rgb(149, 163, 194);
 }
 
 .cell-function-mode {
   color: rgb(55, 35, 144);
-}
-
-.function-mode-span {
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 6px;
-  height: 36px;
-  z-index: 2;
-  background-color: blue;
 }
 
 .function-mode-span span {

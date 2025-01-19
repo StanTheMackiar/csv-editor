@@ -6,7 +6,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { FC, useCallback } from 'react';
 import { useShallow } from 'zustand/shallow';
-import { NameSheetDialog } from './RenameDialog';
+import { NewSheetDialog } from './NewSheetDialog';
 
 export const ContextualBar: FC = () => {
   const [newSheet, name, setName] = useSheetStore(
@@ -40,8 +40,8 @@ export const ContextualBar: FC = () => {
     input.click();
   }, [importJSON]);
 
-  const onNewSheet = (name: string) => {
-    newSheet(name);
+  const onNewSheet = (name: string, rows?: number, cols?: number) => {
+    newSheet(name, rows, cols);
 
     closeNameNewSheetDialog();
   };
@@ -139,13 +139,13 @@ export const ContextualBar: FC = () => {
         </div>
       </section>
 
-      <NameSheetDialog
+      <NewSheetDialog
         onSuccess={onRenameSheet}
         onClose={closeRenameDialog}
         open={renameDialogOpen}
       />
 
-      <NameSheetDialog
+      <NewSheetDialog
         isNewSheet
         onSuccess={onNewSheet}
         onClose={closeNameNewSheetDialog}

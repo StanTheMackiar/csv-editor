@@ -74,7 +74,6 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       const remarkedCell = getCell(remarkedCellCoords, sheet);
 
       if (!remarkedCell || !focusedCellInputRef) {
-        console.error('Feocused cell not found');
         return;
       }
 
@@ -126,12 +125,15 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
         focusedCellInputRef.blur();
       }
 
-      updateCells([
-        {
-          coords: remarkedCellCoords,
-          newValue,
-        },
-      ]);
+      updateCells(
+        [
+          {
+            coords: remarkedCellCoords,
+            newValue,
+          },
+        ],
+        false
+      );
     },
     [
       focusedCellInputRef,
@@ -182,7 +184,13 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
         y: clickedCell.y,
       };
 
-      if (!isSelecting) {
+      const allowSelectionMode =
+        !functionMode &&
+        !isSelectingFunctionMode &&
+        !isSelecting &&
+        !clickedRemarkedCell;
+
+      if (allowSelectionMode) {
         setIsSelecting(true);
         setRemarkedCellCoords(clickedCellCoords);
         setSelectedCellsCoords([clickedCellCoords]);
@@ -241,20 +249,20 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
   }, [setIsSelecting, setIsSelectingFunctionMode]);
 
   useEffect(() => {
-    const ref = sheetRef.current;
-    if (!ref) return;
+    const sheet = sheetRef.current;
+    if (!sheet) return;
 
     if (isSelecting || isSelectingFunctionMode) {
-      ref.addEventListener('mousemove', handleMouseMove);
+      sheet.addEventListener('mousemove', handleMouseMove);
     }
 
-    ref.addEventListener('mousedown', handleMouseDown);
-    ref.addEventListener('mouseup', handleMouseUp);
+    sheet.addEventListener('mousedown', handleMouseDown);
+    sheet.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      ref.removeEventListener('mousemove', handleMouseMove);
-      ref.removeEventListener('mouseup', handleMouseUp);
-      ref.removeEventListener('mousedown', handleMouseDown);
+      sheet.removeEventListener('mousemove', handleMouseMove);
+      sheet.removeEventListener('mouseup', handleMouseUp);
+      sheet.removeEventListener('mousedown', handleMouseDown);
     };
   }, [
     handleMouseMove,

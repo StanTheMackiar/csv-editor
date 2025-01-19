@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
+import { CaretPosition } from '@/helpers';
+import DOMPurify from 'dompurify';
 import deepEqual from 'fast-deep-equal';
 import React from 'react';
 
@@ -13,6 +16,8 @@ type DivProps = Modify<
 >;
 
 export interface Props extends DivProps {
+  cursorAtEndOnFocus?: boolean;
+  plainValue?: string;
   html: string;
   disabled?: boolean;
   tagName?: string;
@@ -23,27 +28,14 @@ export interface Props extends DivProps {
 
 function normalizeHtml(str: string): string {
   return (
-    str && str.replace(/&nbsp;|\u202F|\u00A0/g, ' ').replace(/<br \/>/g, '<br>')
+    str &&
+    str
+      .replace(/&nbsp;|\u202F|\u00A0/g, ' ')
+      .replace(/<br \/>/g, '<br>')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
   );
-}
-
-function replaceCaret(el: HTMLElement) {
-  // Place the caret at the end of the element
-  const target = document.createTextNode('');
-  el.appendChild(target);
-  // do not move caret if element was not focused
-  const isTargetFocused = document.activeElement === el;
-  if (target !== null && target.nodeValue !== null && isTargetFocused) {
-    const sel = window.getSelection();
-    if (sel !== null) {
-      const range = document.createRange();
-      range.setStart(target, target.nodeValue.length);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-    if (el instanceof HTMLElement) el.focus();
-  }
 }
 
 /**
@@ -51,19 +43,80 @@ function replaceCaret(el: HTMLElement) {
  */
 export default class ContentEditable extends React.Component<Props> {
   lastHtml: string = this.props.html;
+  lastCaretPosition: number | null = null;
   el: any =
     typeof this.props.innerRef === 'function'
       ? { current: null }
       : React.createRef<HTMLElement>();
 
-  getEl = () =>
+  private getEl = () =>
     (this.props.innerRef && typeof this.props.innerRef !== 'function'
       ? this.props.innerRef
       : this.el
     ).current;
 
+  private onFocus: React.FocusEventHandler<HTMLDivElement> = (e) => {
+    const el = this.getEl();
+    if (!el) return;
+
+    if (this.props.onFocus) {
+      this.props.onFocus?.(e);
+    } else {
+      this.emitChange(e);
+    }
+
+    if (this.props.cursorAtEndOnFocus && this.props.plainValue) {
+      const caret = new CaretPosition(el);
+      caret.set(this.props.plainValue.length, 5);
+    }
+  };
+
+  emitChange = (originalEvt: React.SyntheticEvent<any>) => {
+    const el = this.getEl();
+    if (!el) return;
+
+    const caret = new CaretPosition(el);
+    this.lastCaretPosition = caret.get();
+
+    const html = el.innerHTML;
+
+    if (this.props.onChange && html !== this.lastHtml) {
+      const evt = Object.assign({}, originalEvt, {
+        target: {
+          value: html,
+        },
+      });
+      this.props.onChange(evt);
+    }
+    this.lastHtml = html;
+  };
+
+  private restoreCaretPosition(el: HTMLElement) {
+    if (!el) return;
+    // Place the caret at the end of the element
+    const target = document.createTextNode('');
+    el.appendChild(target);
+    // do not move caret if element was not focused
+    const isTargetFocused = document.activeElement === el;
+    if (target !== null && target.nodeValue !== null && isTargetFocused) {
+      const caret = new CaretPosition(el);
+      caret.set(this.lastCaretPosition ?? this.props.plainValue?.length ?? 0);
+
+      if (el instanceof HTMLElement) {
+        el.focus();
+      }
+    }
+  }
+
   render() {
-    const { tagName, html, innerRef, ...props } = this.props;
+    const {
+      cursorAtEndOnFocus,
+      plainValue,
+      tagName,
+      html,
+      innerRef,
+      ...props
+    } = this.props;
 
     return React.createElement(tagName || 'div', {
       ...props,
@@ -75,11 +128,10 @@ export default class ContentEditable extends React.Component<Props> {
             }
           : innerRef || this.el,
       onInput: this.emitChange,
+      onFocus: this.onFocus,
       onBlur: this.props.onBlur || this.emitChange,
-      onKeyUp: this.props.onKeyUp || this.emitChange,
-      onKeyDown: this.props.onKeyDown || this.emitChange,
       contentEditable: !this.props.disabled,
-      dangerouslySetInnerHTML: { __html: html },
+      dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(html) },
     });
   }
 
@@ -87,24 +139,18 @@ export default class ContentEditable extends React.Component<Props> {
     const { props } = this;
     const el = this.getEl();
 
-    // We need not rerender if the change of props simply reflects the user's edits.
-    // Rerendering in this case would make the cursor/caret jump
-
-    // Rerender if there is no element yet... (somehow?)
     if (!el) return true;
 
-    // ...or if html really changed... (programmatically, not by user edit)
     if (normalizeHtml(nextProps.html) !== normalizeHtml(el.innerHTML)) {
       return true;
     }
 
-    // Handle additional properties
     return (
       props.disabled !== nextProps.disabled ||
       props.tagName !== nextProps.tagName ||
       props.className !== nextProps.className ||
-      props.innerRef !== nextProps.innerRef ||
-      !deepEqual(props.style, nextProps.style)
+      !deepEqual(props.style, nextProps.style) || // Comparación profunda
+      !deepEqual(props.innerRef, nextProps.innerRef)
     );
   }
 
@@ -112,30 +158,11 @@ export default class ContentEditable extends React.Component<Props> {
     const el = this.getEl();
     if (!el) return;
 
-    // Perhaps React (whose VDOM gets outdated because we often prevent
-    // rerendering) did not update the DOM. So we update it manually now.
     if (this.props.html !== el.innerHTML) {
       el.innerHTML = this.props.html;
     }
+
     this.lastHtml = this.props.html;
-    replaceCaret(el);
+    this.restoreCaretPosition(el);
   }
-
-  emitChange = (originalEvt: React.SyntheticEvent<any>) => {
-    const el = this.getEl();
-    if (!el) return;
-
-    const html = el.innerHTML;
-    if (this.props.onChange && html !== this.lastHtml) {
-      // Clone event with Object.assign to avoid
-      // "Cannot assign to read only property 'target' of object"
-      const evt = Object.assign({}, originalEvt, {
-        target: {
-          value: html,
-        },
-      });
-      this.props.onChange(evt);
-    }
-    this.lastHtml = html;
-  };
 }
