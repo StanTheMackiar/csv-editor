@@ -8,38 +8,30 @@ import {
   getSheetNumbers,
 } from '@/helpers/sheet/sheet.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
-import {
-  Coords,
-  FunctionModeCell,
-  ICellSpecial,
-} from '@/types/sheet/cell/cell.types';
+import { FunctionModeCell, ICellSpecial } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 
 export const useSheet = () => {
   const [
+    cleanSelectedCellsContent,
     focusedCell,
-    colsQty,
     focusedCellInputRef,
     functionMode,
-    rowsQty,
     selectedCells,
-    setSelectedCells,
     setFunctionModeCells,
+    setSelectedCells,
     sheet,
-    cleanSelectedCellsContent,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCellCoords,
-      state.colsQty,
-      state.focusedCellInputRef,
-      state.functionMode,
-      state.rowsQty,
-      state.selectedCellsCoords,
-      state.setSelectedCellsCoords,
-      state.setFunctionModeCellsCoords,
-      state.sheet,
       state.cleanSelectedCellsContent,
+      state.focusedCellCoords,
+      state.focusedCellElement,
+      state.functionMode,
+      state.selectedCellsCoords,
+      state.setFunctionModeCellsCoords,
+      state.setSelectedCellsCoords,
+      state.sheet,
     ])
   );
 
@@ -91,31 +83,34 @@ export const useSheet = () => {
     remarkFunctionCells();
   }, [remarkFunctionCells]);
 
-  const sheetLetters = useMemo(() => getSheetLetters(colsQty), [colsQty]);
-  const sheetNumbers = useMemo(() => getSheetNumbers(rowsQty), [rowsQty]);
+  const sheetLetters = useMemo(() => getSheetLetters(sheet.cols), [sheet.cols]);
+  const sheetNumbers = useMemo(() => getSheetNumbers(sheet.rows), [sheet.rows]);
 
   const onClickColumn = (col: ICellSpecial) => {
-    const columnsFound: Coords[] = sheet
-      .flat()
-      .filter((cell) => cell.x === col.coord)
-      .map((cell) => ({ x: cell.x, y: cell.y }));
+    const columnCoords = getCoordsInRank(
+      { x: col.coord, y: 0 },
+      { x: col.coord, y: sheet.rows - 1 }
+    );
 
-    setSelectedCells(columnsFound);
+    setSelectedCells(columnCoords);
   };
 
   const onClickRow = (row: ICellSpecial) => {
-    const rowsFound: Coords[] = sheet
-      .flat()
-      .filter((cell) => cell.y === row.coord)
-      .map((cell) => ({ x: cell.x, y: cell.y }));
+    const rowCoords = getCoordsInRank(
+      { x: 0, y: row.coord },
+      { x: sheet.cols - 1, y: row.coord }
+    );
 
-    setSelectedCells(rowsFound);
+    setSelectedCells(rowCoords);
   };
 
   const onClickAll = () => {
-    setSelectedCells(
-      sheet.flatMap((row) => row.map((cell) => ({ x: cell.x, y: cell.y })))
+    const allRows = getCoordsInRank(
+      { x: 0, y: 0 },
+      { x: sheet.cols - 1, y: sheet.rows - 1 }
     );
+
+    setSelectedCells(allRows);
   };
 
   const getColIsSelected = useCallback(
@@ -144,20 +139,15 @@ export const useSheet = () => {
     [selectedCells]
   );
 
-  const onCleanCells = () => {
-    cleanSelectedCellsContent();
-  };
-
   return {
     focusedCellInputRef,
-    sheet,
     sheetRef,
     sheetLetters,
     sheetNumbers,
 
     getColIsSelected,
     getRowIsSelected,
-    onCleanCells,
+    onCleanCells: cleanSelectedCellsContent,
     onClickAll,
     onClickColumn,
     onClickRow,

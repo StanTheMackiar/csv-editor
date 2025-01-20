@@ -33,20 +33,6 @@ export const isValidFuncExpression = (
 
   // Validar nombres de funciones y sus argumentos
   const functionRegex = /\b([A-Z]+)\((.*?)\)/gi; // Detectar funciones con sus argumentos
-  const contentWithoutFunctions = content.replace(functionRegex, ''); // Quitar funciones del contenido para validar rangos fuera
-
-  // Detectar si hay rangos de celdas fuera de funciones
-  const rangeRegex = /\b[A-Z]+[0-9]+:[A-Z]+[0-9]+\b/gi;
-  const invalidRanges = Array.from(
-    contentWithoutFunctions.matchAll(rangeRegex)
-  );
-
-  if (invalidRanges.length > 0) {
-    return {
-      valid: false,
-      errorMsg: `#RANGE_OUTSIDE_FUNCTION (${invalidRanges[0][0]})`,
-    };
-  }
 
   // Validar nombres de funciones y argumentos
   const functionMatches = Array.from(content.matchAll(functionRegex));

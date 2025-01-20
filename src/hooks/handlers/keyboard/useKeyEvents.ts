@@ -1,3 +1,4 @@
+import { Direction } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import KeyEnum from '../../../enum/key.enum';
@@ -6,7 +7,7 @@ import {
   isInputKey,
   isSpecialKey,
 } from '../../../helpers/keys/keys.helpers';
-import { Direction, useSheetStore } from '../../../stores/useSheetStore';
+import { useSheetStore } from '../../../stores/useSheetStore';
 
 export const usePressedKeys = () => {
   const [
@@ -20,11 +21,11 @@ export const usePressedKeys = () => {
     recomputeSheet,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCellInputRef,
+      state.focusedCellElement,
       state.moveLatestSelectedCell,
       state.moveRemarkedCell,
       state.remarkedCellCoords,
-      state.remarkedCellInputRef,
+      state.remarkedCellElement,
       state.selectedCellsCoords,
       state.updateCells,
       state.recomputeSheet,
@@ -43,43 +44,40 @@ export const usePressedKeys = () => {
     );
   }, []);
 
-  const focusedElement = focusedCellInputRef?.current;
-  const remarkedElement = remarkedCellInputRef?.current;
-
   const onPressEnter = useCallback(() => {
-    if (focusedElement) {
-      focusedElement.blur();
+    if (focusedCellInputRef) {
+      focusedCellInputRef.blur();
       moveRemarkedCell('down');
 
       return;
-    } else if (remarkedElement) {
-      remarkedElement.focus();
+    } else if (remarkedCellInputRef) {
+      remarkedCellInputRef.focus();
     }
-  }, [focusedElement, moveRemarkedCell, remarkedElement]);
+  }, [focusedCellInputRef, moveRemarkedCell, remarkedCellInputRef]);
 
   const onPressTab = useCallback(() => {
-    remarkedElement?.blur();
+    remarkedCellInputRef?.blur();
 
     moveRemarkedCell('right');
-  }, [moveRemarkedCell, remarkedElement]);
+  }, [moveRemarkedCell, remarkedCellInputRef]);
 
   const onPressShiftPlusTab = useCallback(() => {
-    remarkedElement?.blur();
+    remarkedCellInputRef?.blur();
 
     moveRemarkedCell('left');
-  }, [moveRemarkedCell, remarkedElement]);
+  }, [moveRemarkedCell, remarkedCellInputRef]);
 
   const onPressShiftPlusArrow = useCallback(
     (direction: Direction) => {
-      if (!focusedElement) {
+      if (!focusedCellInputRef) {
         moveLatestSelectedCell(direction);
       }
     },
-    [focusedElement, moveLatestSelectedCell]
+    [focusedCellInputRef, moveLatestSelectedCell]
   );
 
   const onPressBackspace = useCallback(() => {
-    if (focusedElement) return;
+    if (focusedCellInputRef) return;
 
     updateCells(
       selectedCells.map((coords) => ({
@@ -89,14 +87,14 @@ export const usePressedKeys = () => {
     );
 
     recomputeSheet();
-  }, [focusedElement, recomputeSheet, selectedCells, updateCells]);
+  }, [focusedCellInputRef, recomputeSheet, selectedCells, updateCells]);
 
   const onPressArrow = useCallback(
     (direction: Direction) => {
-      if (focusedElement) return;
+      if (focusedCellInputRef) return;
       moveRemarkedCell(direction);
     },
-    [focusedElement, moveRemarkedCell]
+    [focusedCellInputRef, moveRemarkedCell]
   );
 
   const getActionByKeysPressed = useCallback(
@@ -148,8 +146,8 @@ export const usePressedKeys = () => {
 
     const updateRemarkedCell =
       inputKeyPressed &&
-      !focusedElement &&
-      typeof remarkedElement?.innerText !== 'undefined';
+      !focusedCellInputRef &&
+      typeof remarkedCellInputRef?.innerText !== 'undefined';
 
     if (updateRemarkedCell && remarkedCellCoords) {
       updateCells([
@@ -159,14 +157,14 @@ export const usePressedKeys = () => {
         },
       ]);
 
-      remarkedElement.focus();
+      remarkedCellInputRef.focus();
     }
   }, [
-    focusedElement,
+    focusedCellInputRef,
     getActionByKeysPressed,
     pressedKeys,
     remarkedCellCoords,
-    remarkedElement,
+    remarkedCellInputRef,
     updateCells,
   ]);
 
@@ -177,13 +175,14 @@ export const usePressedKeys = () => {
       const keyIsArrow = isArrowKey(keyCode);
       const keyIsSpecial = isSpecialKey(keyCode);
 
-      const allowDefaultEvent = !keyIsSpecial || (focusedElement && keyIsArrow);
+      const allowDefaultEvent =
+        !keyIsSpecial || (focusedCellInputRef && keyIsArrow);
 
       if (!allowDefaultEvent) e.preventDefault();
 
       addPressedKey(keyCode as KeyEnum);
     },
-    [addPressedKey, focusedElement]
+    [addPressedKey, focusedCellInputRef]
   );
 
   const handleKeyUp = useCallback(

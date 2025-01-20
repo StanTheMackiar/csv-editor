@@ -1,6 +1,7 @@
 import { getCell } from '@/helpers';
 import { useClipboard } from '@/hooks/common';
-import { UpdateCellData, useSheetStore } from '@/stores/useSheetStore';
+import { useSheetStore } from '@/stores/useSheetStore';
+import { UpdateCellData } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/shallow';
 
@@ -9,7 +10,7 @@ export const useClipboardEvents = () => {
 
   const [
     updateCells,
-    focusedCellInputRef,
+    focusedCellElement,
     selectedCells,
     setSelectedCells,
     sheet,
@@ -21,7 +22,7 @@ export const useClipboardEvents = () => {
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
-      state.focusedCellInputRef,
+      state.focusedCellElement,
       state.selectedCellsCoords,
       state.setSelectedCellsCoords,
       state.sheet,
@@ -32,8 +33,6 @@ export const useClipboardEvents = () => {
       state.clipboardAction,
     ])
   );
-
-  const focusedElement = focusedCellInputRef?.current;
 
   const getClipboardText = useCallback(() => {
     const cellsByRow = new Map<number, Map<number, string>>();
@@ -63,7 +62,7 @@ export const useClipboardEvents = () => {
 
   const onCopy = useCallback(
     async (e?: ClipboardEvent) => {
-      if (focusedElement) return;
+      if (focusedCellElement) return;
 
       e?.preventDefault();
 
@@ -75,7 +74,7 @@ export const useClipboardEvents = () => {
     },
     [
       copy,
-      focusedElement,
+      focusedCellElement,
       getClipboardText,
       selectedCells,
       setClipboardAction,
@@ -85,7 +84,7 @@ export const useClipboardEvents = () => {
 
   const onCut = useCallback(
     async (e?: ClipboardEvent) => {
-      if (focusedElement) return;
+      if (focusedCellElement) return;
 
       e?.preventDefault();
 
@@ -98,7 +97,7 @@ export const useClipboardEvents = () => {
     },
     [
       copy,
-      focusedElement,
+      focusedCellElement,
       getClipboardText,
       recomputeSheet,
       selectedCells,
@@ -109,7 +108,7 @@ export const useClipboardEvents = () => {
 
   const onPaste = useCallback(
     async (e?: ClipboardEvent) => {
-      if (focusedElement) return;
+      if (focusedCellElement) return;
 
       e?.preventDefault();
 
@@ -157,7 +156,7 @@ export const useClipboardEvents = () => {
     [
       clipboardAction,
       clipboardCellsCoords,
-      focusedElement,
+      focusedCellElement,
       paste,
       recomputeSheet,
       selectedCells,

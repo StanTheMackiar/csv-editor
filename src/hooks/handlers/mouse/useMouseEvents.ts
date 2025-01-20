@@ -18,7 +18,7 @@ import { Coords, ICell } from '../../../types/sheet/cell/cell.types';
 export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
   const [
     updateCells,
-    focusedCellInput,
+    focusedElement,
     functionMode,
     isSelecting,
     remarkedCellCoords,
@@ -33,7 +33,7 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
-      state.focusedCellInputRef,
+      state.focusedCellElement,
       state.functionMode,
       state.isSelecting,
       state.remarkedCellCoords,
@@ -47,8 +47,6 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       state.setIsSelectingFunctionMode,
     ])
   );
-
-  const focusedCellInputRef = focusedCellInput?.current;
 
   const [selectionStartCoords, setSelectionStartCoords] = useState<Coords>(
     selectedCellsCoords[0]
@@ -73,13 +71,13 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
 
       const remarkedCell = getCell(remarkedCellCoords, sheet);
 
-      if (!remarkedCell || !focusedCellInputRef) {
+      if (!remarkedCell || !focusedElement) {
         return;
       }
 
       const { refs } = parseExpression(remarkedCell.value, sheet);
 
-      const caret = new CaretPosition(focusedCellInputRef);
+      const caret = new CaretPosition(focusedElement);
       const caretPosition = caret.get();
 
       if (caretPosition === null) {
@@ -122,7 +120,7 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
 
         caret.set(refUpdated?.end ?? newValue.length, 10);
       } else {
-        focusedCellInputRef.blur();
+        focusedElement.blur();
       }
 
       updateCells(
@@ -136,7 +134,7 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       );
     },
     [
-      focusedCellInputRef,
+      focusedElement,
       functionModeStartCoords,
       remarkedCellCoords,
       sheet,

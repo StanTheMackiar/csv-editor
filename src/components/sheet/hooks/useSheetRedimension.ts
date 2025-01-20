@@ -7,10 +7,10 @@ import {
 import { useSheetStore } from '@/stores/useSheetStore';
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/shallow';
-import s from './Sheet.module.css';
+import s from '../Sheet.module.css';
 
 export const useSheetRedimension = () => {
-  const [columnStyles, setColumnsStyles, rowsStyles, setRowsStyles] =
+  const [columnsStyles, setColumnsStyles, rowsStyles, setRowsStyles] =
     useSheetStore(
       useShallow((state) => [
         state.columnsStyles,
@@ -26,7 +26,7 @@ export const useSheetRedimension = () => {
 
       const startX = e.pageX;
       const startWidth =
-        columnStyles[columnName]?.width || COLUMN_DEFAULT_WIDTH;
+        columnsStyles[columnName]?.width || COLUMN_DEFAULT_WIDTH;
 
       const handleMouseMove = (e: MouseEvent) => {
         const newWidth = Math.max(
@@ -47,7 +47,7 @@ export const useSheetRedimension = () => {
       document.addEventListener('mouseup', handleMouseUp);
       document.body.classList.add(s['resizing-column']);
     },
-    [columnStyles, setColumnsStyles]
+    [columnsStyles, setColumnsStyles]
   );
 
   const resizeRowHeight = useCallback(
@@ -79,6 +79,8 @@ export const useSheetRedimension = () => {
   );
 
   return {
+    columnsStyles,
+    rowsStyles,
     resizeColumnWidth,
     resizeRowHeight,
   };

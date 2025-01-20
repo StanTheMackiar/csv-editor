@@ -1,5 +1,5 @@
-export const INITIAL_ROWS_QTY = 150;
-export const INITIAL_COLS_QTY = 20;
+export const INITIAL_ROWS_QTY = 1000;
+export const INITIAL_COLS_QTY = 30;
 
 export const ROW_DEFAULT_HEIGHT = 28;
 export const ROW_MIN_HEIGHT = 20;

@@ -91,7 +91,7 @@ export const FunctionBar: FC = () => {
 
     setFocusedCellCoords({ x: cell.x, y: cell.y });
     setFunctionBarIsFocused(true);
-    setFocusedCellInputRef(inputRef);
+    setFocusedCellInputRef(inputRef.current);
 
     const isFunction = cell.value.startsWith('=');
 
