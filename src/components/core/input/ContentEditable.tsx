@@ -101,10 +101,6 @@ export default class ContentEditable extends React.Component<Props> {
     if (target !== null && target.nodeValue !== null && isTargetFocused) {
       const caret = new CaretPosition(el);
       caret.set(this.lastCaretPosition ?? this.props.plainValue?.length ?? 0);
-
-      if (el instanceof HTMLElement) {
-        el.focus();
-      }
     }
   }
 

@@ -60,11 +60,9 @@ export const NewSheetDialog: FC<Props> = ({
         </Field>
 
         {isNewSheet && (
-          <>
+          <div className="flex gap-4 items-center">
             <Field className="w-full">
-              <Label className="text-sm/6 text-gray-800">
-                Rows Quantity (optional)
-              </Label>
+              <Label className="text-sm/6 text-gray-800">Rows Quantity</Label>
               <Input
                 type="number"
                 onChange={(e) => setRows(Number(e.target.value))}
@@ -75,7 +73,7 @@ export const NewSheetDialog: FC<Props> = ({
 
             <Field className="w-full">
               <Label className="text-sm/6 text-gray-800">
-                Columns Quantity (optional)
+                Columns Quantity
               </Label>
               <Input
                 type="number"
@@ -84,7 +82,7 @@ export const NewSheetDialog: FC<Props> = ({
                 className="mt-3 block w-full rounded-lg border bg-white py-1.5 px-3 text-sm/6 text-gray-800 focus:outline-none data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-white/25"
               />
             </Field>
-          </>
+          </div>
         )}
 
         <div className="flex items-center justify-end gap-4">

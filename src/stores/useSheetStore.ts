@@ -5,7 +5,6 @@ import {
   INITIAL_REMARKED_CELL_COORDS,
   INITIAL_ROWS_QTY,
 } from '@/helpers/constants/sheet-config.helper';
-import { RefObject } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
@@ -35,9 +34,9 @@ interface SheetState {
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
   remarkedCellCoords: Coords;
-  remarkedCellInputRef: RefObject<HTMLDivElement> | null;
+  remarkedCellElement: HTMLDivElement | null;
   focusedCellCoords: Coords | null;
-  focusedCellInputRef: RefObject<HTMLDivElement> | null;
+  focusedCellElement: HTMLDivElement | null;
   functionMode: boolean;
   selectedCellsCoords: Coords[];
   latestSelectedCellCoords: Coords | null;
@@ -58,13 +57,13 @@ interface SheetActions {
   moveLatestSelectedCell: (direction: Direction) => void;
   moveRemarkedCell: (direction: Direction) => void;
   newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
-  recomputeSheet: () => void;
+  recomputeSheet: VoidFunction;
   selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
   setClipboardAction: (action: ClipboardAction) => void;
   setClipboardCellsCoords: (coords: Coords[]) => void;
   setColumnsStyles: (columnName: string, style: CellStyle) => void;
   setFocusedCellCoords: (coords: Coords | null) => void;
-  setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
+  setFocusedCellInputRef: (value: HTMLDivElement | null) => void;
   setFunctionBarIsFocused: (value: boolean) => void;
   setFunctionMode: (value: boolean) => void;
   setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
@@ -72,7 +71,7 @@ interface SheetActions {
   setIsSelectingFunctionMode: (value: boolean) => void;
   setName: (name: string) => void;
   setRemarkedCellCoords: (coords: Coords) => void;
-  setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
+  setRemarkedCellInputRef: (value: HTMLDivElement | null) => void;
   setRowsStyles: (rowName: string, style: CellStyle) => void;
   setSelectedCellsCoords: (coords: Coords[]) => void;
   updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
@@ -82,7 +81,7 @@ export const defaultState: SheetState = {
   clipboardAction: 'copy',
   clipboardCellsCoords: [],
   focusedCellCoords: null,
-  focusedCellInputRef: null,
+  focusedCellElement: null,
   functionBarIsFocused: false,
   functionMode: false,
   functionModeCellsCoords: [],
@@ -91,7 +90,7 @@ export const defaultState: SheetState = {
   latestSelectedCellCoords: null,
   name: 'New sheet',
   remarkedCellCoords: INITIAL_REMARKED_CELL_COORDS,
-  remarkedCellInputRef: null,
+  remarkedCellElement: null,
   selectedCellsCoords: [INITIAL_REMARKED_CELL_COORDS],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
   cellsStyles: {},
@@ -106,9 +105,9 @@ export const useSheetStore = create(
 
       setFunctionMode: (value) => set({ functionMode: value }),
 
-      setFocusedCellInputRef: (value) => set({ focusedCellInputRef: value }),
+      setFocusedCellInputRef: (value) => set({ focusedCellElement: value }),
 
-      setRemarkedCellInputRef: (value) => set({ remarkedCellInputRef: value }),
+      setRemarkedCellInputRef: (value) => set({ remarkedCellElement: value }),
 
       setIsSelectingFunctionMode: (value) =>
         set({ isSelectingFunctionMode: value }),
@@ -164,8 +163,8 @@ export const useSheetStore = create(
         set(
           ({
             remarkedCellCoords,
-            remarkedCellInputRef,
-            focusedCellInputRef,
+            remarkedCellElement: remarkedCellInputRef,
+            focusedCellElement: focusedCellInputRef,
             sheet,
           }) => {
             const newRemarkedCell = getCoordsByDirection(
@@ -175,8 +174,8 @@ export const useSheetStore = create(
 
             // Verificar que la nueva posición está dentro de los límites
             if (coordsInLimit(newRemarkedCell, sheet)) {
-              focusedCellInputRef?.current?.blur();
-              remarkedCellInputRef?.current?.blur();
+              focusedCellInputRef?.blur();
+              remarkedCellInputRef?.blur();
 
               return {
                 remarkedCellCoords: newRemarkedCell,

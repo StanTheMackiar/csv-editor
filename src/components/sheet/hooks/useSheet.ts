@@ -26,7 +26,7 @@ export const useSheet = () => {
     useShallow((state) => [
       state.cleanSelectedCellsContent,
       state.focusedCellCoords,
-      state.focusedCellInputRef,
+      state.focusedCellElement,
       state.functionMode,
       state.selectedCellsCoords,
       state.setFunctionModeCellsCoords,
@@ -141,7 +141,6 @@ export const useSheet = () => {
 
   return {
     focusedCellInputRef,
-    sheet,
     sheetRef,
     sheetLetters,
     sheetNumbers,
