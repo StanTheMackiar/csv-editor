@@ -1,3 +1,4 @@
+import { Direction } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import KeyEnum from '../../../enum/key.enum';
@@ -6,7 +7,7 @@ import {
   isInputKey,
   isSpecialKey,
 } from '../../../helpers/keys/keys.helpers';
-import { Direction, useSheetStore } from '../../../stores/useSheetStore';
+import { useSheetStore } from '../../../stores/useSheetStore';
 
 export const usePressedKeys = () => {
   const [

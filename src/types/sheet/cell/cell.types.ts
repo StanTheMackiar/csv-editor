@@ -3,7 +3,18 @@ export interface ICell extends Coords {
   value: string;
 }
 
-export type ISheet = ICell[][];
+export type Coords = {
+  x: number;
+  y: number;
+};
+
+export type FilledCells = Record<string, ICell>;
+
+export type ISheet = {
+  cells: FilledCells;
+  rows: number;
+  cols: number;
+};
 
 export type ICellSpecial = {
   coord: number;
@@ -29,12 +40,28 @@ export type ParseExpressionReturn = {
   parsedExp: string;
 };
 
-export type Coords = {
-  x: number;
-  y: number;
-};
-
 export type FunctionModeCell = {
   coords: Coords;
   color: string;
+};
+
+export type UpdateCellData = { coords: Coords; newValue: string };
+
+export type Direction = 'left' | 'up' | 'down' | 'right';
+
+export type CellStyle = {
+  width?: number;
+  height?: number;
+};
+
+export type VisibleCells = {
+  startRow: number;
+  endRow: number;
+  startCol: number;
+  endCol: number;
+};
+
+export type VisibleRow = {
+  row: ICell[];
+  index: number;
 };

@@ -9,33 +9,31 @@ import { RefObject } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
+  coordsInLimit,
   createSheet,
   getCell,
   getCellId,
+  getCellKey,
   getCoordsByDirection,
   getCoordsById,
   getCoordsInRank,
 } from '../helpers/sheet/sheet.helper';
 import {
+  CellStyle,
   Coords,
+  Direction,
   FunctionModeCell,
+  ICell,
   ISheet,
+  UpdateCellData,
 } from '../types/sheet/cell/cell.types';
 
 type ClipboardAction = 'copy' | 'cut';
-export type UpdateCellData = { coords: Coords; newValue: string };
-export type Direction = 'left' | 'up' | 'down' | 'right';
-export type CellStyle = {
-  width?: number;
-  height?: number;
-};
 
-interface State {
+interface SheetState {
   name: string;
-  colsQty: number;
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
-  rowsQty: number;
   remarkedCellCoords: Coords;
   remarkedCellInputRef: RefObject<HTMLDivElement> | null;
   focusedCellCoords: Coords | null;
@@ -53,8 +51,7 @@ interface State {
   rowsStyles: Record<string, CellStyle | undefined>;
 }
 
-interface Actions {
-  addCellsToSelection: (coords: Coords) => void;
+interface SheetActions {
   cleanSelectedCellsContent: VoidFunction;
   exportSheet: () => string;
   importSheet: (json: string) => void;
@@ -65,6 +62,7 @@ interface Actions {
   selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
   setClipboardAction: (action: ClipboardAction) => void;
   setClipboardCellsCoords: (coords: Coords[]) => void;
+  setColumnsStyles: (columnName: string, style: CellStyle) => void;
   setFocusedCellCoords: (coords: Coords | null) => void;
   setFocusedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
   setFunctionBarIsFocused: (value: boolean) => void;
@@ -72,21 +70,17 @@ interface Actions {
   setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
   setIsSelecting: (value: boolean) => void;
   setIsSelectingFunctionMode: (value: boolean) => void;
-  setLatestSelectedCellCoords: (coords: Coords | null) => void;
   setName: (name: string) => void;
   setRemarkedCellCoords: (coords: Coords) => void;
   setRemarkedCellInputRef: (value: RefObject<HTMLDivElement> | null) => void;
-  setSelectedCellsCoords: (coords: Coords[]) => void;
-  unmarkSelectedCells: VoidFunction;
-  updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
-  setColumnsStyles: (columnName: string, style: CellStyle) => void;
   setRowsStyles: (rowName: string, style: CellStyle) => void;
+  setSelectedCellsCoords: (coords: Coords[]) => void;
+  updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
 }
 
-export const defaultState: State = {
+export const defaultState: SheetState = {
   clipboardAction: 'copy',
   clipboardCellsCoords: [],
-  colsQty: INITIAL_COLS_QTY,
   focusedCellCoords: null,
   focusedCellInputRef: null,
   functionBarIsFocused: false,
@@ -95,10 +89,9 @@ export const defaultState: State = {
   isSelecting: false,
   isSelectingFunctionMode: false,
   latestSelectedCellCoords: null,
-  name: 'My Sheet',
+  name: 'New sheet',
   remarkedCellCoords: INITIAL_REMARKED_CELL_COORDS,
   remarkedCellInputRef: null,
-  rowsQty: INITIAL_ROWS_QTY,
   selectedCellsCoords: [INITIAL_REMARKED_CELL_COORDS],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
   cellsStyles: {},
@@ -107,14 +100,11 @@ export const defaultState: State = {
 };
 
 export const useSheetStore = create(
-  persist<State & Actions>(
+  persist<SheetState & SheetActions>(
     (set, get) => ({
       ...defaultState,
 
       setFunctionMode: (value) => set({ functionMode: value }),
-
-      setLatestSelectedCellCoords: (cell) =>
-        set({ latestSelectedCellCoords: cell }),
 
       setFocusedCellInputRef: (value) => set({ focusedCellInputRef: value }),
 
@@ -128,33 +118,45 @@ export const useSheetStore = create(
 
       recomputeSheet: () =>
         set(({ sheet }) => {
-          const newSheet = sheet.map((row) =>
-            row.map((cell) => {
-              const newCell = computeCell(cell, sheet);
+          const newCells: Record<string, ICell> = {};
 
-              return newCell;
-            })
-          );
+          for (const [key, cell] of Object.entries(sheet.cells)) {
+            newCells[key] = computeCell(cell, sheet);
+          }
 
-          return { sheet: newSheet };
+          return {
+            sheet: {
+              ...sheet,
+              cells: newCells,
+            },
+          };
         }),
 
       updateCells: (updatedCells, recompute = true) =>
         set(({ sheet }) => {
-          const newSheet = sheet.slice();
+          const newCells = { ...sheet.cells };
 
           updatedCells.forEach(({ coords, newValue }) => {
-            const targetCell = getCell(coords, sheet);
+            const key = getCellKey(coords);
 
-            if (!targetCell) return;
+            if (newValue === '') {
+              // Si el valor está vacío, eliminamos la celda
+              delete newCells[key];
+            } else {
+              const currentCell = getCell(coords, sheet);
+              if (!currentCell) return;
 
-            newSheet[coords.y][coords.x] = recompute
-              ? computeCell(targetCell, sheet, newValue)
-              : { ...targetCell, value: newValue };
+              newCells[key] = recompute
+                ? computeCell(currentCell, sheet, newValue)
+                : { ...currentCell, value: newValue };
+            }
           });
 
           return {
-            sheet: newSheet,
+            sheet: {
+              ...sheet,
+              cells: newCells,
+            },
           };
         }),
 
@@ -166,24 +168,13 @@ export const useSheetStore = create(
             focusedCellInputRef,
             sheet,
           }) => {
-            if (!remarkedCellCoords) {
-              const coords: Coords = { x: 0, y: 0 };
-
-              return {
-                remarkedCellCoords: coords,
-                selectedCellsCoords: [coords],
-                latestSelectedCellCoords: coords,
-              };
-            }
-
             const newRemarkedCell = getCoordsByDirection(
               direction,
               remarkedCellCoords
             );
 
-            try {
-              getCell(newRemarkedCell, sheet);
-
+            // Verificar que la nueva posición está dentro de los límites
+            if (coordsInLimit(newRemarkedCell, sheet)) {
               focusedCellInputRef?.current?.blur();
               remarkedCellInputRef?.current?.blur();
 
@@ -192,11 +183,9 @@ export const useSheetStore = create(
                 selectedCellsCoords: [newRemarkedCell],
                 latestSelectedCellCoords: newRemarkedCell,
               };
-            } catch (err) {
-              console.error(err);
-
-              return {};
             }
+
+            return {};
           }
         ),
 
@@ -247,9 +236,6 @@ export const useSheetStore = create(
           };
         }),
 
-      unmarkSelectedCells: () =>
-        set({ selectedCellsCoords: [], latestSelectedCellCoords: null }),
-
       setIsSelecting: (value) => set({ isSelecting: value }),
 
       setRemarkedCellCoords: (cell) => set({ remarkedCellCoords: cell }),
@@ -267,15 +253,6 @@ export const useSheetStore = create(
           };
         }),
 
-      addCellsToSelection: (newCell) =>
-        set((state) => {
-          const selectedCellsCoords = [
-            ...new Set([...state.selectedCellsCoords, newCell]),
-          ];
-
-          return { selectedCellsCoords, latestSelectedCellCoords: newCell };
-        }),
-
       cleanSelectedCellsContent: () => {
         const { updateCells, selectedCellsCoords } = get();
 
@@ -290,16 +267,12 @@ export const useSheetStore = create(
       setClipboardAction: (action) => set({ clipboardAction: action }),
 
       exportSheet: () => {
-        const { colsQty, rowsQty, name, sheet, columnsStyles, rowsStyles } =
-          get();
-
+        const { sheet, name, columnsStyles, rowsStyles } = get();
         return JSON.stringify({
-          colsQty,
           name,
-          rowsQty,
           sheet,
-          rowsStyles,
           columnsStyles,
+          rowsStyles,
         });
       },
 
@@ -310,17 +283,11 @@ export const useSheetStore = create(
 
       setName: (name) => set({ name }),
 
-      newSheet: (
-        name,
-        rowsQty = INITIAL_ROWS_QTY,
-        colsQty = INITIAL_COLS_QTY
-      ) =>
+      newSheet: (name, rows = INITIAL_ROWS_QTY, cols = INITIAL_COLS_QTY) =>
         set({
           ...defaultState,
           name,
-          rowsQty,
-          colsQty,
-          sheet: createSheet(rowsQty, colsQty),
+          sheet: createSheet(rows, cols),
         }),
 
       setFunctionBarIsFocused: (value) => set({ functionBarIsFocused: value }),
@@ -355,14 +322,11 @@ export const useSheetStore = create(
       name: LocalStorageEnum.SHEET,
       partialize: (state) =>
         ({
-          ...defaultState,
           name: state.name,
-          colsQty: state.colsQty,
-          rowsQty: state.rowsQty,
           sheet: state.sheet,
           columnsStyles: state.columnsStyles,
           rowsStyles: state.rowsStyles,
-        }) as State & Actions, // Guardar solo una parte del estado
+        }) as SheetState & SheetActions, // Guardar solo una parte del estado
     }
   )
 );

@@ -1,6 +1,7 @@
 import { getCell } from '@/helpers';
 import { useClipboard } from '@/hooks/common';
-import { UpdateCellData, useSheetStore } from '@/stores/useSheetStore';
+import { useSheetStore } from '@/stores/useSheetStore';
+import { UpdateCellData } from '@/types/sheet/cell/cell.types';
 import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/shallow';
 

@@ -1,24 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RefObject } from 'react';
-import { Direction } from '../../stores/useSheetStore';
 import {
   Coords,
+  Direction,
   ICell,
   ICellSpecial,
   ISheet,
 } from '../../types/sheet/cell/cell.types';
 
-export const getCell = (coords: Coords, sheet: ISheet) => {
-  if (
-    coords.y < 0 ||
-    coords.y >= sheet.length ||
-    coords.x < 0 ||
-    coords.x >= sheet[coords.y]?.length
-  ) {
-    return;
-  }
+export const getCellKey = (coords: Coords): string => `${coords.x},${coords.y}`;
 
-  return sheet[coords.y][coords.x];
+export const getCell = (coords: Coords, sheet: ISheet): ICell | undefined => {
+  if (!coordsInLimit(coords, sheet)) return;
+
+  const key = getCellKey(coords);
+  // Si la celda no existe, retornamos una celda vacía con las coordenadas
+  return (
+    sheet.cells[key] || {
+      value: '',
+      x: coords.x,
+      y: coords.y,
+    }
+  );
 };
 
 export const getCoordsById = (cellId: string): Coords | undefined => {
@@ -104,16 +107,11 @@ export const getCellId = ({ x, y }: Coords) => {
   return `${letter}${number}`;
 };
 
-export const createSheet = (rowsQty: number, colsQty: number): ISheet =>
-  Array.from({ length: rowsQty }, (_, y) =>
-    Array.from({ length: colsQty }, (_, x) => {
-      return {
-        value: ``,
-        x,
-        y,
-      };
-    })
-  );
+export const createSheet = (rows: number, cols: number): ISheet => ({
+  cells: {},
+  rows,
+  cols,
+});
 
 export const getSheetLetters = (colsQty: number): ICellSpecial[] => {
   return Array.from({ length: colsQty }, (_, x) => ({
@@ -134,17 +132,18 @@ export const adjustSheetSize = (
   cols: number,
   currentSheet: ISheet
 ): ISheet => {
-  // Genera una nueva hoja completa
-  const newSheet = createSheet(rows, cols);
+  const newSheet: ISheet = {
+    cells: { ...currentSheet.cells },
+    rows,
+    cols,
+  };
 
-  // Sobrescribe las celdas de la nueva hoja con las celdas existentes en currentSheet, si las hay
-  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
-    for (let colIndex = 0; colIndex < cols; colIndex++) {
-      if (currentSheet[rowIndex]?.[colIndex]) {
-        newSheet[rowIndex][colIndex] = currentSheet[rowIndex][colIndex];
-      }
+  // Eliminar celdas que estén fuera de los nuevos límites
+  Object.entries(newSheet.cells).forEach(([key, cell]) => {
+    if (cell.x >= cols || cell.y >= rows) {
+      delete newSheet.cells[key];
     }
-  }
+  });
 
   return newSheet;
 };
@@ -208,15 +207,15 @@ export const getCoordsInRank = (
   const endX = Math.max(startCoords.x, endCoords.x);
   const endY = Math.max(startCoords.y, endCoords.y);
 
-  const cells: Coords[] = [];
+  const coords: Coords[] = [];
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      cells.push({ x, y });
+      coords.push({ x, y });
     }
   }
 
-  return cells;
+  return coords;
 };
 
 export const getCoordsByDirection = (
@@ -249,4 +248,25 @@ export const getCoordsByDirection = (
     x: positionX,
     y: positionY,
   };
+};
+
+export const getAllRows = (sheet: ISheet): ICell[][] => {
+  const rows: ICell[][] = [];
+
+  for (let y = 0; y < sheet.rows; y++) {
+    const row: ICell[] = [];
+
+    for (let x = 0; x < sheet.cols; x++) {
+      const cell = getCell({ x, y }, sheet);
+      row.push(cell!);
+    }
+
+    rows.push(row);
+  }
+
+  return rows;
+};
+
+export const coordsInLimit = ({ x, y }: Coords, sheet: ISheet): boolean => {
+  return x >= 0 && x < sheet.cols && y >= 0 && y < sheet.rows;
 };

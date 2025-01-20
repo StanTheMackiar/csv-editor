@@ -1,5 +1,5 @@
 'use client';
-import { IS_DEV } from '@/helpers';
+import { getCell, getCellKey, IS_DEV } from '@/helpers';
 import {
   COLUMN_DEFAULT_WIDTH,
   COLUMN_MIN_WIDTH,
@@ -8,6 +8,7 @@ import {
 } from '@/helpers/constants/sheet-config.helper';
 import { useMouseEvents, usePressedKeys } from '@/hooks';
 import { useSheetStore } from '@/stores/useSheetStore';
+import { ICell, VisibleCells, VisibleRow } from '@/types/sheet/cell/cell.types';
 import { ContextMenuItem } from '@/types/sheet/menu/context-menu.type';
 import clsx from 'clsx';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,19 +23,19 @@ import { useSheetRedimension } from './useSheetRedimension';
 
 // Aumentamos el buffer para mayor suavidad
 const DEFAULT_BUFFER_SIZE = {
-  rows: 10, // Más filas de buffer
-  columns: 10, // Buffer para columnas
+  rows: 5, // Más filas de buffer
+  columns: 5, // Buffer para columnas
 };
 
 const MAX_BUFFER_SIZE = {
-  rows: 50,
-  columns: 40,
+  rows: 20,
+  columns: 20,
 };
 
 // Throttle tiempo en ms
 const SCROLL_THROTTLE = 16; // Aproximadamente 60fps
 const SPEED_THRESHOLD = 30; // Umbral para considerar scroll rápido
-const BUFFER_SCALE = 2; // Factor de escala para el buffer
+const BUFFER_SCALE = 1; // Factor de escala para el buffer
 
 export const Sheet: FC = () => {
   const {
@@ -198,7 +199,7 @@ export const Sheet: FC = () => {
     return () => observer.disconnect();
   }, [sheetRef, updateViewportDimensions]);
 
-  const visibleRange = useMemo(() => {
+  const visibleRange = useMemo<VisibleCells>(() => {
     const { scrollLeft, viewportWidth, scrollTop, viewportHeight } = viewState;
     const rowHeight = ROW_DEFAULT_HEIGHT;
     const columnWidth = COLUMN_DEFAULT_WIDTH;
@@ -208,7 +209,7 @@ export const Sheet: FC = () => {
       Math.floor(scrollTop / rowHeight) - bufferSize.rows
     );
     const endRow = Math.min(
-      sheet.length,
+      sheet.rows,
       Math.ceil((scrollTop + viewportHeight) / rowHeight) + bufferSize.rows
     );
 
@@ -227,7 +228,7 @@ export const Sheet: FC = () => {
     viewState,
     bufferSize.rows,
     bufferSize.columns,
-    sheet.length,
+    sheet.rows,
     sheetLetters.length,
   ]);
 
@@ -287,14 +288,21 @@ export const Sheet: FC = () => {
     [updateBufferSize]
   );
 
-  // Generar filas visibles
-  const visibleRows = useMemo(() => {
-    const rows = sheet
-      .slice(visibleRange.startRow, visibleRange.endRow)
-      .map((row, index) => ({
-        row: row.slice(visibleRange.startCol, visibleRange.endCol),
-        index: visibleRange.startRow + index,
-      }));
+  const visibleRows = useMemo<VisibleRow[]>(() => {
+    const rows: VisibleRow[] = [];
+
+    for (let y = visibleRange.startRow; y < visibleRange.endRow; y++) {
+      const row: ICell[] = [];
+
+      for (let x = visibleRange.startCol; x < visibleRange.endCol; x++) {
+        const cell = getCell({ x, y }, sheet);
+        row.push(cell!);
+      }
+      rows.push({
+        row,
+        index: y,
+      });
+    }
 
     return rows;
   }, [sheet, visibleRange]);
@@ -302,7 +310,7 @@ export const Sheet: FC = () => {
   const debugInfo = useMemo<DebugInfoProps | null>(() => {
     if (!IS_DEV) return null;
 
-    const totalRows = sheet.length;
+    const totalRows = sheet.rows;
     const totalColumns = sheetLetters.length;
     const renderedRows = visibleRange.endRow - visibleRange.startRow;
     const renderedColumns = visibleRange.endCol - visibleRange.startCol;
@@ -321,7 +329,7 @@ export const Sheet: FC = () => {
       bufferSize,
     };
   }, [
-    sheet.length,
+    sheet.rows,
     sheetLetters.length,
     visibleRange.endRow,
     visibleRange.startRow,
@@ -455,7 +463,7 @@ export const Sheet: FC = () => {
                     </td>
 
                     {row.map((cell) => (
-                      <Cell key={`${cell.x}${cell.y}`} cell={cell} />
+                      <Cell key={getCellKey(cell)} cell={cell} />
                     ))}
                   </tr>
                 );

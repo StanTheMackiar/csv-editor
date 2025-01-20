@@ -1,4 +1,4 @@
-import { NUMBER_REGEX } from '@/helpers';
+import { getAllRows, NUMBER_REGEX } from '@/helpers';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { Workbook } from 'exceljs';
 import { useShallow } from 'zustand/shallow';
@@ -20,7 +20,9 @@ export const useSaveExcel = () => {
 
     const worksheet = workbook.addWorksheet(name);
 
-    sheet.forEach((row, rowIndex) => {
+    const allRows = getAllRows(sheet);
+
+    allRows.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
         const isNumber = NUMBER_REGEX.test(cell.value);
         const isFormula = cell.value.startsWith('=');
