@@ -10,18 +10,20 @@ import {
 
 export const getCellKey = (coords: Coords): string => `${coords.x},${coords.y}`;
 
-export const getCell = (coords: Coords, sheet: ISheet): ICell | undefined => {
-  if (!coordsInLimit(coords, sheet)) return;
+export const getCell = (coords: Coords, sheet: ISheet): ICell => {
+  const emptyCell: ICell = {
+    value: '',
+    x: coords.x,
+    y: coords.y,
+  };
+
+  if (!coordsInLimit(coords, sheet)) {
+    return emptyCell;
+  }
 
   const key = getCellKey(coords);
   // Si la celda no existe, retornamos una celda vacía con las coordenadas
-  return (
-    sheet.cells[key] || {
-      value: '',
-      x: coords.x,
-      y: coords.y,
-    }
-  );
+  return sheet.cells[key] || emptyCell;
 };
 
 export const getCoordsById = (cellId: string): Coords | undefined => {
@@ -113,18 +115,36 @@ export const createSheet = (rows: number, cols: number): ISheet => ({
   cols,
 });
 
-export const getSheetLetters = (colsQty: number): ICellSpecial[] => {
-  return Array.from({ length: colsQty }, (_, x) => ({
-    name: getLetterFromXCoord(x)!.toString(),
-    coord: x,
-  }));
+export const getSpecialColumn = (
+  startCol: number,
+  endCol: number
+): ICellSpecial[] => {
+  const colsQty = endCol - startCol;
+
+  return Array.from({ length: colsQty }, (_, i) => {
+    const x = i + startCol;
+
+    return {
+      name: getLetterFromXCoord(x)!.toString(),
+      coord: x,
+    };
+  });
 };
 
-export const getSheetNumbers = (rowsQty: number): ICellSpecial[] => {
-  return Array.from({ length: rowsQty }, (_, y) => ({
-    name: getNumberFromYCoord(y).toString(),
-    coord: y,
-  }));
+export const getSpecialRow = (
+  startRow: number,
+  endRow: number
+): ICellSpecial[] => {
+  const rowsQty = endRow - startRow;
+
+  return Array.from({ length: rowsQty }, (_, i) => {
+    const y = i + startRow;
+
+    return {
+      name: getNumberFromYCoord(y).toString(),
+      coord: y,
+    };
+  });
 };
 
 export const adjustSheetSize = (
