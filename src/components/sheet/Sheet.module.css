@@ -1,3 +1,12 @@
+.sheet-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: strict;
+  scroll-behavior: smooth;
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+}
+
 .sheet-table {
   table-layout: fixed;
   top: 0;
@@ -8,6 +17,12 @@
   width: max-content;
   user-select: none;
   cursor: default;
+}
+
+.table-wrapper {
+  contain: layout style paint;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .sheet-header-cell {

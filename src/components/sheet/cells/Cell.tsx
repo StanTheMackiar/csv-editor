@@ -40,16 +40,6 @@ export const Cell: FC<CellProps> = memo(
 
     const showFunctionQuestionMark = isFunctionMode && !functionBarIsFocused;
 
-    // const onClick = () => {
-    //   if (inputFocused || !IS_DEV) return;
-    //   // eslint-disable-next-line no-console
-    //   console.log({
-    //     ...cell,
-    //     id: getCellId(cell),
-    //     valueHtml: parseTextToHTML(cell.value),
-    //   });
-    // };
-
     const onDoubleClickProxy = useCallback<MouseEventHandler>(() => {
       onDoubleClick(inputRef.current);
     }, [inputRef, onDoubleClick]);

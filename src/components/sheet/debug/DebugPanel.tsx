@@ -11,10 +11,6 @@ export interface DebugInfoProps {
   renderedColumns: number;
   totalCells: number;
   renderedCells: number;
-  bufferSize: {
-    rows: number;
-    columns: number;
-  };
 }
 
 export const DebugPanel: FC<DebugInfoProps> = (props) => {
@@ -34,8 +30,6 @@ export const DebugPanel: FC<DebugInfoProps> = (props) => {
       <p>Total Cells: {props.totalCells}</p>
       <p>Rendered Cells: {props.renderedCells}</p>
       <br />
-      <p>Buffer Size Cols: {props.bufferSize.columns}</p>
-      <p>Buffer Size Rows: {props.bufferSize.rows}</p>
       <p>
         Memory Saved:{' '}
         {(

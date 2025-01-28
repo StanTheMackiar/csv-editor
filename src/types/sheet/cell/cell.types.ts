@@ -54,14 +54,11 @@ export type CellStyle = {
   height?: number;
 };
 
-export type VisibleCells = {
+export type VisibleRange = {
   startRow: number;
   endRow: number;
   startCol: number;
   endCol: number;
-};
-
-export type VisibleRow = {
-  row: ICell[];
-  index: number;
+  specialRow: ICellSpecial[];
+  specialColumn: ICellSpecial[];
 };

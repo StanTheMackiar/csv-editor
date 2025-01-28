@@ -4,12 +4,10 @@ import {
   getCell,
   getCoordsById,
   getCoordsInRank,
-  getSheetLetters,
-  getSheetNumbers,
 } from '@/helpers/sheet/sheet.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { FunctionModeCell, ICellSpecial } from '@/types/sheet/cell/cell.types';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/shallow';
 
 export const useSheet = () => {
@@ -34,8 +32,6 @@ export const useSheet = () => {
       state.sheet,
     ])
   );
-
-  const sheetRef = useRef<HTMLDivElement>(null);
 
   const remarkFunctionCells = useCallback(() => {
     const focusedValue = focusedCell && getCell(focusedCell, sheet)?.value;
@@ -83,9 +79,6 @@ export const useSheet = () => {
     remarkFunctionCells();
   }, [remarkFunctionCells]);
 
-  const sheetLetters = useMemo(() => getSheetLetters(sheet.cols), [sheet.cols]);
-  const sheetNumbers = useMemo(() => getSheetNumbers(sheet.rows), [sheet.rows]);
-
   const onClickColumn = (col: ICellSpecial) => {
     const columnCoords = getCoordsInRank(
       { x: col.coord, y: 0 },
@@ -115,9 +108,7 @@ export const useSheet = () => {
 
   const getColIsSelected = useCallback(
     (col: ICellSpecial): boolean => {
-      const selectedCellsArray = Array.from(selectedCells);
-
-      const someColSelected = selectedCellsArray.some(
+      const someColSelected = selectedCells.some(
         (selectedCell) => selectedCell.x === col.coord
       );
 
@@ -128,9 +119,7 @@ export const useSheet = () => {
 
   const getRowIsSelected = useCallback(
     (row: ICellSpecial): boolean => {
-      const selectedCellsArray = Array.from(selectedCells);
-
-      const someRowSelected = selectedCellsArray.some(
+      const someRowSelected = selectedCells.some(
         (selectedCell) => selectedCell.y === row.coord
       );
 
@@ -141,9 +130,6 @@ export const useSheet = () => {
 
   return {
     focusedCellInputRef,
-    sheetRef,
-    sheetLetters,
-    sheetNumbers,
 
     getColIsSelected,
     getRowIsSelected,
