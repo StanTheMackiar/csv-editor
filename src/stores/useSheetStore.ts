@@ -1,3 +1,4 @@
+'use client';
 import KeyEnum from '@/enum/key.enum';
 import { LocalStorageEnum } from '@/enum/local-storage.enum';
 import { computeCell, getFocusedCellElement } from '@/helpers';
