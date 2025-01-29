@@ -168,11 +168,11 @@ export const adjustSheetSize = (
   return newSheet;
 };
 
-export const getCellFromMouseEvent = (
+export const getCellFromEvent = (
   sheet: ISheet,
-  e: any
+  e: Event
 ): ICell | undefined => {
-  const target = e.target as HTMLInputElement;
+  const target = e.target as HTMLDivElement;
   const [cellId] = target.id.split('-');
 
   const cell = getCellFromId(sheet, cellId);

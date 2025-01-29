@@ -159,10 +159,6 @@
   outline: 1px solid rgb(149, 163, 194);
 }
 
-.cell-function-mode {
-  color: rgb(55, 35, 144);
-}
-
 .function-mode-span span {
   color: white;
 }

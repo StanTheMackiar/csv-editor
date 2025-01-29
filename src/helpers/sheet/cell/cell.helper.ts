@@ -1,4 +1,4 @@
-import { getCellId } from '@/helpers';
+import { getCellId, isClient } from '@/helpers';
 import { ICell, ISheet } from '../../../types/sheet/cell/cell.types';
 import { MATH_REGEX } from '../../constants/regex.constans';
 import { isValidFuncExpression } from './is-valid-exp-helper';
@@ -37,6 +37,15 @@ export const computeCell = (
     }
 
     const { parsedExp, cells } = parseExpression(computedValue, sheet);
+
+    const rangeWithoutFunctionPattern =
+      /^([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*")(,\s*([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*"))+$/;
+
+    if (rangeWithoutFunctionPattern.test(parsedExp)) {
+      throw new Error('', {
+        cause: '#INVALID_RANGE',
+      });
+    }
 
     const circularDependency = cells.some(
       (c) => getCellId(c) === getCellId(cell)
@@ -83,4 +92,34 @@ export const computeCell = (
 export const isMathExpression = (expression: string): boolean => {
   // Verificar si la expresión coincide con la expresión regular
   return MATH_REGEX.test(expression);
+};
+
+export const getRemarkedCellElement = () => {
+  if (!isClient) return null;
+
+  const cellRemarked = document.querySelector('.cell-remarked');
+
+  if (
+    cellRemarked instanceof HTMLDivElement &&
+    cellRemarked.contentEditable === 'true'
+  ) {
+    return cellRemarked;
+  }
+
+  return null;
+};
+
+export const getFocusedCellElement = () => {
+  if (!isClient) return null;
+
+  const focusedElement = document.activeElement;
+
+  if (
+    focusedElement instanceof HTMLDivElement &&
+    focusedElement.contentEditable === 'true'
+  ) {
+    return focusedElement;
+  }
+
+  return null;
 };

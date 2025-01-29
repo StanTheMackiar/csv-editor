@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
-import { CaretPosition } from '@/helpers';
-import DOMPurify from 'dompurify';
+import { DivCaretController } from '@/helpers';
 import deepEqual from 'fast-deep-equal';
 import React from 'react';
 
@@ -59,14 +58,10 @@ export default class ContentEditable extends React.Component<Props> {
     const el = this.getEl();
     if (!el) return;
 
-    if (this.props.onFocus) {
-      this.props.onFocus?.(e);
-    } else {
-      this.emitChange(e);
-    }
+    this.props.onFocus?.(e);
 
     if (this.props.cursorAtEndOnFocus && this.props.plainValue) {
-      const caret = new CaretPosition(el);
+      const caret = new DivCaretController(el);
       caret.set(this.props.plainValue.length, 5);
     }
   };
@@ -75,7 +70,7 @@ export default class ContentEditable extends React.Component<Props> {
     const el = this.getEl();
     if (!el) return;
 
-    const caret = new CaretPosition(el);
+    const caret = new DivCaretController(el);
     this.lastCaretPosition = caret.get();
 
     const html = el.innerHTML;
@@ -99,7 +94,7 @@ export default class ContentEditable extends React.Component<Props> {
     // do not move caret if element was not focused
     const isTargetFocused = document.activeElement === el;
     if (target !== null && target.nodeValue !== null && isTargetFocused) {
-      const caret = new CaretPosition(el);
+      const caret = new DivCaretController(el);
       caret.set(this.lastCaretPosition ?? this.props.plainValue?.length ?? 0);
     }
   }
@@ -125,9 +120,9 @@ export default class ContentEditable extends React.Component<Props> {
           : innerRef || this.el,
       onInput: this.emitChange,
       onFocus: this.onFocus,
-      onBlur: this.props.onBlur || this.emitChange,
+      onBlur: this.props.onBlur,
       contentEditable: !this.props.disabled,
-      dangerouslySetInnerHTML: { __html: DOMPurify.sanitize(html) },
+      dangerouslySetInnerHTML: { __html: html },
     });
   }
 

@@ -102,6 +102,7 @@ if (typeof window !== 'undefined') {
     }
   };
 
+  window.AVG = window.AVERAGE;
   window.SUMA = window.SUM;
   window.PROMEDIO = window.AVERAGE;
   window.CONTAR = window.COUNT;

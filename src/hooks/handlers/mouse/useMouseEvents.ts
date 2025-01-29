@@ -1,24 +1,24 @@
 import {
-  CaretPosition,
-  checkIfEndsWithInvalidChar,
+  DivCaretController,
+  getFocusedCellElement,
   isBetween,
   parseHTMLToText,
 } from '@/helpers';
 import { parseExpression } from '@/helpers/sheet/cell/parse-expression.helper';
-import { RefObject, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useShallow } from 'zustand/react/shallow';
 import {
   getCell,
-  getCellFromMouseEvent,
+  getCellFromEvent,
   getCellId,
 } from '../../../helpers/sheet/sheet.helper';
 import { useSheetStore } from '../../../stores/useSheetStore';
 import { Coords, ICell } from '../../../types/sheet/cell/cell.types';
 
-export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
+export const useMouseEvents = () => {
   const [
     updateCells,
-    focusedElement,
     functionMode,
     isSelecting,
     remarkedCellCoords,
@@ -33,7 +33,6 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
-      state.focusedCellElement,
       state.functionMode,
       state.isSelecting,
       state.remarkedCellCoords,
@@ -55,8 +54,11 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
     useState<Coords | null>(null);
 
   const handleGetCellsRef = useCallback(
-    (e: MouseEvent, currentCell: ICell) => {
-      e.preventDefault();
+    (currentCell: ICell) => {
+      const focusedElement = getFocusedCellElement();
+      const remarkedCell = getCell(remarkedCellCoords, sheet);
+
+      if (!focusedElement || !remarkedCell) return;
 
       const currentCellId = getCellId(currentCell);
       const functionModeStartId =
@@ -69,15 +71,9 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
         ? `${functionModeStartId}:${currentCellId}`
         : currentCellId;
 
-      const remarkedCell = getCell(remarkedCellCoords, sheet);
-
-      if (!remarkedCell || !focusedElement) {
-        return;
-      }
-
       const { refs } = parseExpression(remarkedCell.value, sheet);
 
-      const caret = new CaretPosition(focusedElement);
+      const caret = new DivCaretController(focusedElement);
       const caretPosition = caret.get();
 
       if (caretPosition === null) {
@@ -90,56 +86,63 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
       });
 
       const valueUntilCursor = remarkedCell.value.substring(0, caretPosition);
-      const endsWithInvalidChar = checkIfEndsWithInvalidChar(valueUntilCursor);
-
-      const cursorIsAtEnd = caretPosition >= remarkedCell.value.length;
-      const shouldReplaceRef = !!cursorBetweenRef && cursorIsAtEnd;
-      const shouldAddRef =
-        !cursorBetweenRef && endsWithInvalidChar && cursorIsAtEnd;
+      const shouldReplaceRef = !!cursorBetweenRef;
 
       let newValue = remarkedCell.value;
 
+      const shouldAddRef = !cursorBetweenRef;
+
       if (shouldAddRef) {
-        const value =
-          valueUntilCursor +
-          cellNewRef +
-          remarkedCell.value.slice(caretPosition);
+        newValue =
+          valueUntilCursor + cellNewRef + newValue.slice(caretPosition);
 
-        newValue = parseHTMLToText(value);
+        const newCarretPosition = caretPosition + cellNewRef.length;
+        const cursorIsAtEnd = newCarretPosition >= newValue.length;
 
-        caret.set(caretPosition + cellNewRef.length, 5);
+        if (!cursorIsAtEnd) {
+          toast.error('Cannot add reference in the middle of a cell', {
+            position: 'top-left',
+          });
+
+          focusedElement.blur();
+
+          return;
+        } else {
+          caret.set(caretPosition + cellNewRef.length, 5);
+        }
       } else if (shouldReplaceRef) {
-        const replacedValue = newValue
-          .slice()
-          .replace(cursorBetweenRef.ref, cellNewRef);
-
-        newValue = parseHTMLToText(replacedValue);
+        newValue = newValue.slice().replace(cursorBetweenRef.ref, cellNewRef);
 
         const { refs } = parseExpression(newValue, sheet);
         const refUpdated = refs.find(({ ref }) => ref === cellNewRef);
+        const newCaretPosition = refUpdated?.end ?? newValue.length;
 
-        caret.set(refUpdated?.end ?? newValue.length, 10);
-      } else {
-        focusedElement.blur();
+        const cursorIsAtEnd = newCaretPosition >= newValue.length;
+
+        if (isRange && !cursorIsAtEnd) {
+          toast.error('Cannot replace reference for a range', {
+            position: 'top-left',
+          });
+
+          focusedElement.blur();
+
+          return;
+        } else {
+          caret.set(newCaretPosition, 5);
+        }
       }
 
       updateCells(
         [
           {
             coords: remarkedCellCoords,
-            newValue,
+            newValue: parseHTMLToText(newValue),
           },
         ],
         false
       );
     },
-    [
-      focusedElement,
-      functionModeStartCoords,
-      remarkedCellCoords,
-      sheet,
-      updateCells,
-    ]
+    [functionModeStartCoords, remarkedCellCoords, sheet, updateCells]
   );
 
   const handleMouseDown = useCallback(
@@ -149,7 +152,7 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
 
       if (!rightClicked && !leftClicked) return;
 
-      const clickedCell = getCellFromMouseEvent(sheet, e);
+      const clickedCell = getCellFromEvent(sheet, e);
       if (!clickedCell) return;
 
       const clickedCellInSelectedCells = selectedCellsCoords.some(
@@ -173,14 +176,10 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
         setFunctionModeStartCoords(clickedCell);
         setIsSelectingFunctionMode(true);
 
-        handleGetCellsRef(e, clickedCell);
+        e.preventDefault();
+        handleGetCellsRef(clickedCell);
         return;
       }
-
-      const clickedCellCoords: Coords = {
-        x: clickedCell.x,
-        y: clickedCell.y,
-      };
 
       const allowSelectionMode =
         !functionMode &&
@@ -190,9 +189,9 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
 
       if (allowSelectionMode) {
         setIsSelecting(true);
-        setRemarkedCellCoords(clickedCellCoords);
-        setSelectedCellsCoords([clickedCellCoords]);
-        setSelectionStartCoords(clickedCellCoords);
+        setRemarkedCellCoords(clickedCell);
+        setSelectedCellsCoords([clickedCell]);
+        setSelectionStartCoords(clickedCell);
 
         return;
       }
@@ -214,20 +213,18 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      const currentCell = getCellFromMouseEvent(sheet, e);
+      const currentCell = getCellFromEvent(sheet, e);
       if (!currentCell) return;
 
       if (isSelectingFunctionMode) {
-        handleGetCellsRef(e, currentCell);
+        e.preventDefault();
+        handleGetCellsRef(currentCell);
 
         return;
       }
 
       if (isSelecting) {
-        selectCells(selectionStartCoords, {
-          x: currentCell.x,
-          y: currentCell.y,
-        });
+        selectCells(selectionStartCoords, currentCell);
       }
     },
     [
@@ -240,35 +237,32 @@ export const useMouseEvents = (sheetRef: RefObject<HTMLDivElement>) => {
     ]
   );
 
-  const handleMouseUp = useCallback(() => {
-    setIsSelectingFunctionMode(false);
-    setFunctionModeStartCoords(null);
-    setIsSelecting(false);
-  }, [setIsSelecting, setIsSelectingFunctionMode]);
-
   useEffect(() => {
-    const sheet = sheetRef.current;
-    if (!sheet) return;
+    const handleMouseUp = () => {
+      setIsSelectingFunctionMode(false);
+      setFunctionModeStartCoords(null);
+      setIsSelecting(false);
+    };
 
     if (isSelecting || isSelectingFunctionMode) {
-      sheet.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mousemove', handleMouseMove);
     }
 
-    sheet.addEventListener('mousedown', handleMouseDown);
-    sheet.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      sheet.removeEventListener('mousemove', handleMouseMove);
-      sheet.removeEventListener('mouseup', handleMouseUp);
-      sheet.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousedown', handleMouseDown);
     };
   }, [
-    handleMouseMove,
-    handleMouseUp,
     handleMouseDown,
-    sheetRef,
+    handleMouseMove,
     isSelecting,
     isSelectingFunctionMode,
+    setIsSelecting,
+    setIsSelectingFunctionMode,
   ]);
 
   return {};

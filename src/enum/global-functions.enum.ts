@@ -1,6 +1,7 @@
 export enum GlobalFunctionsEnumEN {
   SUM = 'SUM',
   AVERAGE = 'AVERAGE',
+  AVG = 'AVG',
   COUNT = 'COUNT',
   MAX = 'MAX',
   MIN = 'MIN',

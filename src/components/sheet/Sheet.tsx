@@ -1,5 +1,4 @@
 'use client';
-import { getCellKey } from '@/helpers';
 import {
   COLUMN_DEFAULT_WIDTH,
   COLUMN_MIN_WIDTH,
@@ -24,7 +23,7 @@ export const Sheet: FC = () => {
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const {
-    focusedCellInputRef,
+    focusedCell,
     getColIsSelected,
     getRowIsSelected,
     onCleanCells,
@@ -33,8 +32,9 @@ export const Sheet: FC = () => {
     onClickRow,
   } = useSheet();
 
-  useMouseEvents(sheetRef);
+  useMouseEvents();
   usePressedKeys();
+  const { onChangeCell } = useHandleCellEvents();
 
   const { columnsStyles, rowsStyles, resizeColumnWidth, resizeRowHeight } =
     useSheetRedimension();
@@ -47,9 +47,6 @@ export const Sheet: FC = () => {
     openContextualMenu,
     setMenuPosition,
   } = useSheetClipboard();
-
-  const { onBlurCell, onChangeCell, onDoubleClickCell, onFocusCell } =
-    useHandleCellEvents();
 
   const {
     debugInfo,
@@ -99,8 +96,8 @@ export const Sheet: FC = () => {
       >
         <div
           style={{
-            width: viewState.totalWidth + COLUMN_DEFAULT_WIDTH,
-            height: viewState.totalHeight + ROW_DEFAULT_HEIGHT,
+            width: viewState.totalWidth,
+            height: viewState.totalHeight,
             position: 'absolute',
             top: 0,
             left: 0,
@@ -116,7 +113,7 @@ export const Sheet: FC = () => {
         >
           <table
             className={clsx(s['sheet-table'], {
-              'select-auto': !!focusedCellInputRef,
+              'select-auto': Boolean(focusedCell),
             })}
           >
             <thead className={s['sheet-head']}>
@@ -161,7 +158,7 @@ export const Sheet: FC = () => {
 
                 return (
                   <tr
-                    key={rowNumber.coord}
+                    key={i}
                     style={{
                       height: `${rowHeight}px`,
                       lineHeight: `${rowHeight}px`,
@@ -185,15 +182,8 @@ export const Sheet: FC = () => {
                       />
                     </td>
 
-                    {row.map((cell) => (
-                      <Cell
-                        onBlur={onBlurCell}
-                        onChange={onChangeCell}
-                        onDoubleClick={onDoubleClickCell}
-                        onFocus={onFocusCell}
-                        key={getCellKey(cell)}
-                        cell={cell}
-                      />
+                    {row.map((cell, i) => (
+                      <Cell onChange={onChangeCell} key={i} cell={cell} />
                     ))}
                   </tr>
                 );

@@ -46,15 +46,13 @@ export const parseExpression = (
           if (!coords) return original;
 
           refs.push({
-            start: offset + 1 + innerContent.indexOf(original),
-            end: offset + 1 + innerContent.indexOf(original) + original.length,
+            start: offset + 2 + innerContent.indexOf(original),
+            end: offset + 2 + innerContent.indexOf(original) + original.length,
             ref: cellId,
           });
 
           const cell = getCell(coords, sheet);
-          if (cell) {
-            cells.push(cell);
-          }
+          if (cell) cells.push(cell);
 
           const computedValue =
             typeof cell?.computedValue !== 'undefined'

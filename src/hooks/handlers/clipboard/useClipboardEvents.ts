@@ -1,4 +1,4 @@
-import { getCell } from '@/helpers';
+import { getCell, getFocusedCellElement } from '@/helpers';
 import { useClipboard } from '@/hooks/common';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { UpdateCellData } from '@/types/sheet/cell/cell.types';
@@ -10,7 +10,6 @@ export const useClipboardEvents = () => {
 
   const [
     updateCells,
-    focusedCellElement,
     selectedCells,
     setSelectedCells,
     sheet,
@@ -22,7 +21,6 @@ export const useClipboardEvents = () => {
   ] = useSheetStore(
     useShallow((state) => [
       state.updateCells,
-      state.focusedCellElement,
       state.selectedCellsCoords,
       state.setSelectedCellsCoords,
       state.sheet,
@@ -62,6 +60,7 @@ export const useClipboardEvents = () => {
 
   const onCopy = useCallback(
     async (e?: ClipboardEvent) => {
+      const focusedCellElement = getFocusedCellElement();
       if (focusedCellElement) return;
 
       e?.preventDefault();
@@ -74,7 +73,6 @@ export const useClipboardEvents = () => {
     },
     [
       copy,
-      focusedCellElement,
       getClipboardText,
       selectedCells,
       setClipboardAction,
@@ -84,6 +82,7 @@ export const useClipboardEvents = () => {
 
   const onCut = useCallback(
     async (e?: ClipboardEvent) => {
+      const focusedCellElement = getFocusedCellElement();
       if (focusedCellElement) return;
 
       e?.preventDefault();
@@ -97,7 +96,6 @@ export const useClipboardEvents = () => {
     },
     [
       copy,
-      focusedCellElement,
       getClipboardText,
       recomputeSheet,
       selectedCells,
@@ -108,6 +106,7 @@ export const useClipboardEvents = () => {
 
   const onPaste = useCallback(
     async (e?: ClipboardEvent) => {
+      const focusedCellElement = getFocusedCellElement();
       if (focusedCellElement) return;
 
       e?.preventDefault();
@@ -156,7 +155,6 @@ export const useClipboardEvents = () => {
     [
       clipboardAction,
       clipboardCellsCoords,
-      focusedCellElement,
       paste,
       recomputeSheet,
       selectedCells,

@@ -1,5 +1,6 @@
+import { getFocusedCellElement, getRemarkedCellElement } from '@/helpers';
 import { Direction } from '@/types/sheet/cell/cell.types';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import KeyEnum from '../../../enum/key.enum';
 import {
@@ -11,73 +12,76 @@ import { useSheetStore } from '../../../stores/useSheetStore';
 
 export const usePressedKeys = () => {
   const [
-    focusedCellInputRef,
     moveLatestSelectedCell,
     moveRemarkedCell,
     remarkedCellCoords,
-    remarkedCellInputRef,
     selectedCells,
     updateCells,
     recomputeSheet,
+    pressedKeys,
+    addPressedKey,
+    removePressedKey,
+    cleanPressedKeys,
   ] = useSheetStore(
     useShallow((state) => [
-      state.focusedCellElement,
       state.moveLatestSelectedCell,
       state.moveRemarkedCell,
       state.remarkedCellCoords,
-      state.remarkedCellElement,
       state.selectedCellsCoords,
       state.updateCells,
       state.recomputeSheet,
+      state.pressedKeys,
+      state.addPressedKey,
+      state.removePressedKey,
+      state.cleanPressedKeys,
     ])
   );
 
-  const [pressedKeys, setPressedKeys] = useState<KeyEnum[]>([]);
-
-  const addPressedKey = useCallback((key: KeyEnum) => {
-    setPressedKeys((pressedKeys) => [...new Set([...pressedKeys, key])]);
-  }, []);
-
-  const removePressedKey = useCallback((key: KeyEnum) => {
-    setPressedKeys((pressedKeys) =>
-      pressedKeys.filter((stateKey) => stateKey !== key)
-    );
-  }, []);
-
   const onPressEnter = useCallback(() => {
-    if (focusedCellInputRef) {
-      focusedCellInputRef.blur();
+    const focusedCellElement = getFocusedCellElement();
+    const remarkedCellElement = getRemarkedCellElement();
+
+    if (focusedCellElement) {
+      focusedCellElement.blur();
       moveRemarkedCell('down');
 
       return;
-    } else if (remarkedCellInputRef) {
-      remarkedCellInputRef.focus();
+    } else if (remarkedCellElement) {
+      remarkedCellElement.focus();
     }
-  }, [focusedCellInputRef, moveRemarkedCell, remarkedCellInputRef]);
+  }, [moveRemarkedCell]);
 
   const onPressTab = useCallback(() => {
-    remarkedCellInputRef?.blur();
+    const remarkedCellElement = getRemarkedCellElement();
+
+    remarkedCellElement?.blur();
 
     moveRemarkedCell('right');
-  }, [moveRemarkedCell, remarkedCellInputRef]);
+  }, [moveRemarkedCell]);
 
   const onPressShiftPlusTab = useCallback(() => {
-    remarkedCellInputRef?.blur();
+    const remarkedCellElement = getRemarkedCellElement();
+
+    remarkedCellElement?.blur();
 
     moveRemarkedCell('left');
-  }, [moveRemarkedCell, remarkedCellInputRef]);
+  }, [moveRemarkedCell]);
 
   const onPressShiftPlusArrow = useCallback(
     (direction: Direction) => {
-      if (!focusedCellInputRef) {
+      const focusedCellElement = getFocusedCellElement();
+
+      if (!focusedCellElement) {
         moveLatestSelectedCell(direction);
       }
     },
-    [focusedCellInputRef, moveLatestSelectedCell]
+    [moveLatestSelectedCell]
   );
 
   const onPressBackspace = useCallback(() => {
-    if (focusedCellInputRef) return;
+    const focusedCellElement = getFocusedCellElement();
+
+    if (focusedCellElement) return;
 
     updateCells(
       selectedCells.map((coords) => ({
@@ -87,14 +91,16 @@ export const usePressedKeys = () => {
     );
 
     recomputeSheet();
-  }, [focusedCellInputRef, recomputeSheet, selectedCells, updateCells]);
+  }, [recomputeSheet, selectedCells, updateCells]);
 
   const onPressArrow = useCallback(
     (direction: Direction) => {
-      if (focusedCellInputRef) return;
+      const focusedCellElement = getFocusedCellElement();
+      if (focusedCellElement) return;
+
       moveRemarkedCell(direction);
     },
-    [focusedCellInputRef, moveRemarkedCell]
+    [moveRemarkedCell]
   );
 
   const getActionByKeysPressed = useCallback(
@@ -134,6 +140,9 @@ export const usePressedKeys = () => {
   );
 
   const handlePressedKeys = useCallback(() => {
+    const focusedCellElement = getFocusedCellElement();
+    const remarkedCellElement = getRemarkedCellElement();
+
     if (!pressedKeys.length) return;
 
     const keyAction = getActionByKeysPressed(pressedKeys);
@@ -146,8 +155,8 @@ export const usePressedKeys = () => {
 
     const updateRemarkedCell =
       inputKeyPressed &&
-      !focusedCellInputRef &&
-      typeof remarkedCellInputRef?.innerText !== 'undefined';
+      !focusedCellElement &&
+      typeof remarkedCellElement?.innerText !== 'undefined';
 
     if (updateRemarkedCell && remarkedCellCoords) {
       updateCells([
@@ -157,32 +166,27 @@ export const usePressedKeys = () => {
         },
       ]);
 
-      remarkedCellInputRef.focus();
+      remarkedCellElement.focus();
     }
-  }, [
-    focusedCellInputRef,
-    getActionByKeysPressed,
-    pressedKeys,
-    remarkedCellCoords,
-    remarkedCellInputRef,
-    updateCells,
-  ]);
+  }, [getActionByKeysPressed, pressedKeys, remarkedCellCoords, updateCells]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      const focusedCellElement = getFocusedCellElement();
+
       const keyCode = e.key;
 
       const keyIsArrow = isArrowKey(keyCode);
       const keyIsSpecial = isSpecialKey(keyCode);
 
       const allowDefaultEvent =
-        !keyIsSpecial || (focusedCellInputRef && keyIsArrow);
+        !keyIsSpecial || (focusedCellElement && keyIsArrow);
 
       if (!allowDefaultEvent) e.preventDefault();
 
       addPressedKey(keyCode as KeyEnum);
     },
-    [addPressedKey, focusedCellInputRef]
+    [addPressedKey]
   );
 
   const handleKeyUp = useCallback(
@@ -200,10 +204,6 @@ export const usePressedKeys = () => {
   }, [pressedKeys]);
 
   useEffect(() => {
-    const cleanPressedKeys = () => {
-      setPressedKeys([]);
-    };
-
     window.addEventListener('blur', cleanPressedKeys);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
@@ -213,7 +213,8 @@ export const usePressedKeys = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleKeyUp, handleKeyDown, setPressedKeys]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleKeyUp, handleKeyDown, pressedKeys]);
 
   return {};
 };

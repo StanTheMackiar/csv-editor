@@ -2,14 +2,13 @@ import { getCellId } from '@/helpers';
 import { parseTextToHTML } from '@/helpers/change-cell.helper';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { ICell } from '@/types/sheet/cell/cell.types';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 
 export const useCell = (cell: ICell) => {
   const [
     selectedCells,
     remarkedCell,
-    setRemarkedCellRef,
     functionMode,
     functionModeCells,
     focusedCell,
@@ -20,7 +19,6 @@ export const useCell = (cell: ICell) => {
       return [
         state.selectedCellsCoords,
         state.remarkedCellCoords,
-        state.setRemarkedCellInputRef,
         state.functionMode,
         state.functionModeCellsCoords,
         state.focusedCellCoords,
@@ -36,23 +34,20 @@ export const useCell = (cell: ICell) => {
     );
   }, [cell.x, cell.y, clipboardCellsCoords]);
 
-  const cellId = useMemo(
-    () =>
-      getCellId({
-        x: cell.x,
-        y: cell.y,
-      }),
-    [cell.x, cell.y]
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cellId = useMemo(() => getCellId(cell), [cell.x, cell.y]);
 
-  const functionModeCell = functionModeCells.find(
-    (funcCell) => funcCell.coords.x === cell.x && funcCell.coords.y === cell.y
+  const functionModeCell = useMemo(
+    () =>
+      functionModeCells.find(
+        (funcCell) =>
+          funcCell.coords.x === cell.x && funcCell.coords.y === cell.y
+      ),
+    [functionModeCells, cell.x, cell.y]
   );
 
   const inputFocused = focusedCell?.x === cell.x && focusedCell?.y === cell.y;
   const isFunctionMode = functionMode && inputFocused;
-
-  const inputRef = useRef<HTMLDivElement>(null);
 
   const isSelected = useMemo(
     () =>
@@ -71,10 +66,6 @@ export const useCell = (cell: ICell) => {
       isRemarked,
     };
   }, [remarkedCell, isSelected, selectedCells, cell]);
-
-  useEffect(() => {
-    if (isRemarked) setRemarkedCellRef(inputRef.current);
-  }, [isRemarked, inputRef, setRemarkedCellRef]);
 
   const html = useMemo<string>(() => {
     const cellHasFunction = cell.value.startsWith('=');
@@ -97,7 +88,6 @@ export const useCell = (cell: ICell) => {
     functionModeCell,
     html,
     inputFocused,
-    inputRef,
     isFunctionMode,
     isRemarked,
     isSelected,

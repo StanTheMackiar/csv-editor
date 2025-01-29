@@ -1,6 +1,6 @@
 import { wait } from './promise/wait.helper';
 
-export class CaretPosition {
+export class DivCaretController {
   constructor(private node: HTMLDivElement | HTMLElement | null | undefined) {}
 
   private findNodeAndOffset = (

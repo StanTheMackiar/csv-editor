@@ -7,7 +7,7 @@ import { getCell, getCellId, parseTextToHTML } from '@/helpers';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import clsx from 'clsx';
-import { FC, FocusEventHandler, useMemo, useRef } from 'react';
+import { FC, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 
 export const FunctionBar: FC = () => {
@@ -16,11 +16,7 @@ export const FunctionBar: FC = () => {
     sheet,
     updateCells,
     functionBarIsFocused,
-    setFunctionBarIsFocused,
-    setFocusedCellCoords,
-    setFocusedCellInputRef,
     setFunctionMode,
-    recomputeSheet,
     isFunctionMode,
     selectedCellsCoords,
   ] = useSheetStore(
@@ -29,43 +25,40 @@ export const FunctionBar: FC = () => {
       state.sheet,
       state.updateCells,
       state.functionBarIsFocused,
-      state.setFunctionBarIsFocused,
-      state.setFocusedCellCoords,
-      state.setFocusedCellInputRef,
       state.setFunctionMode,
-      state.recomputeSheet,
       state.functionMode,
       state.selectedCellsCoords,
     ])
   );
 
-  const inputRef = useRef<HTMLDivElement>(null);
+  const cell = useMemo(
+    () => getCell(remarkedCellCoords, sheet),
+    [remarkedCellCoords, sheet]
+  );
 
-  const cell = getCell(remarkedCellCoords, sheet);
+  const onChange = useCallback(
+    (e: ContentEditableEvent) => {
+      if (!cell) throw new Error('Cell not found');
 
-  const onChange = (e: ContentEditableEvent) => {
-    if (!cell) throw new Error('Cell not found');
+      const text = (e.currentTarget.textContent as string) ?? '';
 
-    const text = (e.currentTarget.textContent as string) ?? '';
+      const newIsFunctionMode = text.startsWith('=');
+      if (isFunctionMode !== newIsFunctionMode) {
+        setFunctionMode(newIsFunctionMode);
+      }
 
-    const newIsFunctionMode = text.startsWith('=');
-    if (isFunctionMode !== newIsFunctionMode) {
-      setFunctionMode(newIsFunctionMode);
-    }
-
-    updateCells(
-      [
-        {
-          coords: {
-            x: cell.x,
-            y: cell.y,
+      updateCells(
+        [
+          {
+            coords: cell,
+            newValue: text,
           },
-          newValue: text,
-        },
-      ],
-      false
-    );
-  };
+        ],
+        false
+      );
+    },
+    [cell, isFunctionMode, setFunctionMode, updateCells]
+  );
 
   const html = useMemo<string>(() => {
     if (!cell?.value) return '';
@@ -76,32 +69,6 @@ export const FunctionBar: FC = () => {
 
     return cellHasFunction ? parsedValue : cell?.value;
   }, [cell?.value]);
-
-  const onBlur: FocusEventHandler<HTMLInputElement> = () => {
-    setFocusedCellInputRef(null);
-    setFocusedCellCoords(null);
-    setFunctionMode(false);
-    setFunctionBarIsFocused(false);
-
-    recomputeSheet();
-  };
-
-  const onFocus = () => {
-    if (!cell) throw new Error('Cell not found');
-
-    setFocusedCellCoords({ x: cell.x, y: cell.y });
-    setFunctionBarIsFocused(true);
-    setFocusedCellInputRef(inputRef.current);
-
-    const isFunction = cell.value.startsWith('=');
-
-    if (isFunction) {
-      setFunctionMode(isFunction);
-
-      // const caret = new CaretPosition(inputRef.current);
-      // caret.set(cell.value.length, 5);
-    }
-  };
 
   const showFunctionQuestionMark = isFunctionMode && functionBarIsFocused;
 
@@ -120,8 +87,10 @@ export const FunctionBar: FC = () => {
     return `${getCellId(firstCellCoords)}:${getCellId(lastCellCoords)}`;
   }, [selectedCellsCoords]);
 
+  const cellId = getCellId(remarkedCellCoords);
+
   return (
-    <section className="bg-white flex py-0.5">
+    <section id={`${cellId}-cell`} className="bg-white flex py-0.5">
       <div className="select-none px-6 border-r-2">
         <span className="text-gray-700 text-sm">{selectedRange}</span>
       </div>
@@ -139,9 +108,7 @@ export const FunctionBar: FC = () => {
         <Icon icon="material-symbols-light:function" />
 
         <ContentEditable
-          onBlur={onBlur}
-          innerRef={inputRef}
-          onFocus={onFocus}
+          id={`${cellId}-functionbar`}
           className="flex-1 border-none outline-none text-gray-800 text-sm"
           html={html}
           onChange={onChange}

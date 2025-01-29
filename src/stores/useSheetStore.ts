@@ -1,5 +1,6 @@
+import KeyEnum from '@/enum/key.enum';
 import { LocalStorageEnum } from '@/enum/local-storage.enum';
-import { computeCell } from '@/helpers';
+import { computeCell, getFocusedCellElement } from '@/helpers';
 import {
   INITIAL_COLS_QTY,
   INITIAL_REMARKED_CELL_COORDS,
@@ -30,27 +31,28 @@ import {
 type ClipboardAction = 'copy' | 'cut';
 
 interface SheetState {
-  name: string;
+  cellsStyles: Record<string, CellStyle | undefined>;
+  clipboardAction: ClipboardAction;
+  clipboardCellsCoords: Coords[];
+  columnsStyles: Record<string, CellStyle | undefined>;
+  focusedCellCoords: Coords | null;
+  functionBarIsFocused: boolean;
+  functionMode: boolean;
+  functionModeCellsCoords: FunctionModeCell[];
   isSelecting: boolean;
   isSelectingFunctionMode: boolean;
-  remarkedCellCoords: Coords;
-  remarkedCellElement: HTMLDivElement | null;
-  focusedCellCoords: Coords | null;
-  focusedCellElement: HTMLDivElement | null;
-  functionMode: boolean;
-  selectedCellsCoords: Coords[];
   latestSelectedCellCoords: Coords | null;
-  functionModeCellsCoords: FunctionModeCell[];
-  clipboardCellsCoords: Coords[];
-  clipboardAction: ClipboardAction;
-  sheet: ISheet;
-  functionBarIsFocused: boolean;
-  cellsStyles: Record<string, CellStyle | undefined>;
-  columnsStyles: Record<string, CellStyle | undefined>;
+  name: string;
+  pressedKeys: KeyEnum[];
+  remarkedCellCoords: Coords;
   rowsStyles: Record<string, CellStyle | undefined>;
+  selectedCellsCoords: Coords[];
+  sheet: ISheet;
 }
 
 interface SheetActions {
+  addPressedKey: (key: KeyEnum) => void;
+  cleanPressedKeys: VoidFunction;
   cleanSelectedCellsContent: VoidFunction;
   exportSheet: () => string;
   importSheet: (json: string) => void;
@@ -58,12 +60,12 @@ interface SheetActions {
   moveRemarkedCell: (direction: Direction) => void;
   newSheet: (name: string, rowsQty?: number, colsQty?: number) => void;
   recomputeSheet: VoidFunction;
+  removePressedKey: (key: KeyEnum) => void;
   selectCells: (startCellCoords: Coords, endCellCoords: Coords) => void;
   setClipboardAction: (action: ClipboardAction) => void;
   setClipboardCellsCoords: (coords: Coords[]) => void;
   setColumnsStyles: (columnName: string, style: CellStyle) => void;
   setFocusedCellCoords: (coords: Coords | null) => void;
-  setFocusedCellInputRef: (value: HTMLDivElement | null) => void;
   setFunctionBarIsFocused: (value: boolean) => void;
   setFunctionMode: (value: boolean) => void;
   setFunctionModeCellsCoords: (coords: FunctionModeCell[]) => void;
@@ -71,17 +73,17 @@ interface SheetActions {
   setIsSelectingFunctionMode: (value: boolean) => void;
   setName: (name: string) => void;
   setRemarkedCellCoords: (coords: Coords) => void;
-  setRemarkedCellInputRef: (value: HTMLDivElement | null) => void;
   setRowsStyles: (rowName: string, style: CellStyle) => void;
   setSelectedCellsCoords: (coords: Coords[]) => void;
   updateCells: (data: UpdateCellData[], recompute?: boolean) => void;
 }
 
 export const defaultState: SheetState = {
+  cellsStyles: {},
   clipboardAction: 'copy',
   clipboardCellsCoords: [],
+  columnsStyles: {},
   focusedCellCoords: null,
-  focusedCellElement: null,
   functionBarIsFocused: false,
   functionMode: false,
   functionModeCellsCoords: [],
@@ -89,13 +91,11 @@ export const defaultState: SheetState = {
   isSelectingFunctionMode: false,
   latestSelectedCellCoords: null,
   name: 'New sheet',
+  pressedKeys: [],
   remarkedCellCoords: INITIAL_REMARKED_CELL_COORDS,
-  remarkedCellElement: null,
+  rowsStyles: {},
   selectedCellsCoords: [INITIAL_REMARKED_CELL_COORDS],
   sheet: createSheet(INITIAL_ROWS_QTY, INITIAL_COLS_QTY),
-  cellsStyles: {},
-  columnsStyles: {},
-  rowsStyles: {},
 };
 
 export const useSheetStore = create(
@@ -104,10 +104,6 @@ export const useSheetStore = create(
       ...defaultState,
 
       setFunctionMode: (value) => set({ functionMode: value }),
-
-      setFocusedCellInputRef: (value) => set({ focusedCellElement: value }),
-
-      setRemarkedCellInputRef: (value) => set({ remarkedCellElement: value }),
 
       setIsSelectingFunctionMode: (value) =>
         set({ isSelectingFunctionMode: value }),
@@ -160,33 +156,27 @@ export const useSheetStore = create(
         }),
 
       moveRemarkedCell: (direction) =>
-        set(
-          ({
-            remarkedCellCoords,
-            remarkedCellElement: remarkedCellInputRef,
-            focusedCellElement: focusedCellInputRef,
-            sheet,
-          }) => {
-            const newRemarkedCell = getCoordsByDirection(
-              direction,
-              remarkedCellCoords
-            );
+        set(({ remarkedCellCoords, sheet }) => {
+          const newRemarkedCell = getCoordsByDirection(
+            direction,
+            remarkedCellCoords
+          );
 
-            // Verificar que la nueva posición está dentro de los límites
-            if (coordsInLimit(newRemarkedCell, sheet)) {
-              focusedCellInputRef?.blur();
-              remarkedCellInputRef?.blur();
+          // Verificar que la nueva posición está dentro de los límites
+          if (coordsInLimit(newRemarkedCell, sheet)) {
+            const focusedCellElement = getFocusedCellElement();
+            focusedCellElement?.blur();
 
-              return {
-                remarkedCellCoords: newRemarkedCell,
-                selectedCellsCoords: [newRemarkedCell],
-                latestSelectedCellCoords: newRemarkedCell,
-              };
-            }
-
-            return {};
+            return {
+              remarkedCellElement: null,
+              remarkedCellCoords: newRemarkedCell,
+              selectedCellsCoords: [newRemarkedCell],
+              latestSelectedCellCoords: newRemarkedCell,
+            };
           }
-        ),
+
+          return {};
+        }),
 
       selectCells: (startCellCoords, currentCellCoords) =>
         set(() => {
@@ -316,6 +306,24 @@ export const useSheetStore = create(
             },
           };
         }),
+
+      addPressedKey: (key) =>
+        set(({ pressedKeys }) => {
+          if (pressedKeys.includes(key)) return {};
+
+          return {
+            pressedKeys: [...pressedKeys, key],
+          };
+        }),
+
+      removePressedKey: (key) =>
+        set(({ pressedKeys }) => {
+          return {
+            pressedKeys: pressedKeys.filter((stateKey) => stateKey !== key),
+          };
+        }),
+
+      cleanPressedKeys: () => set({ pressedKeys: [] }),
     }),
     {
       name: LocalStorageEnum.SHEET,

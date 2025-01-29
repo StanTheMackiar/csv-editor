@@ -1,12 +1,10 @@
 import {
   COLUMN_DEFAULT_WIDTH,
-  COLUMN_MIN_WIDTH,
   getCell,
   getSpecialColumn,
   getSpecialRow,
   IS_DEV,
   ROW_DEFAULT_HEIGHT,
-  ROW_MIN_HEIGHT,
 } from '@/helpers';
 import { useSheetStore } from '@/stores/useSheetStore';
 import { ICell, VisibleRange } from '@/types/sheet/cell/cell.types';
@@ -42,25 +40,23 @@ export const useSheetVirtualized = (sheetRef: RefObject<HTMLDivElement>) => {
   });
 
   const calculateTotalDimensions = useCallback(() => {
-    const heightCustom = Object.keys(rowsStyles).reduce((acc, key) => {
-      return (
-        acc +
-        Math.max(
-          (rowsStyles?.[key]?.height ?? 0) - ROW_DEFAULT_HEIGHT,
-          ROW_MIN_HEIGHT
-        )
-      );
-    }, 0);
+    const heightCustom =
+      Object.keys(rowsStyles).reduce((acc, key) => {
+        const rowCustomHeight = rowsStyles?.[key]?.height ?? 0;
 
-    const widthCustom = Object.keys(columnsStyles).reduce((acc, key) => {
-      return (
-        acc +
-        Math.max(
-          (columnsStyles?.[key]?.width ?? 0) - COLUMN_DEFAULT_WIDTH,
-          COLUMN_MIN_WIDTH
-        )
-      );
-    }, 0);
+        const heightDiff = rowCustomHeight - ROW_DEFAULT_HEIGHT;
+
+        return acc + heightDiff;
+      }, 0) + LAYOUT_EXTRA;
+
+    const widthCustom =
+      Object.keys(columnsStyles).reduce((acc, key) => {
+        const columnCustomWidth = columnsStyles?.[key]?.width ?? 0;
+
+        const widthDiff = columnCustomWidth - COLUMN_DEFAULT_WIDTH;
+
+        return acc + widthDiff;
+      }, 0) + LAYOUT_EXTRA;
 
     const totalHeight = sheet.rows * ROW_DEFAULT_HEIGHT + heightCustom;
     const totalWidth = sheet.cols * COLUMN_DEFAULT_WIDTH + widthCustom;
@@ -75,16 +71,12 @@ export const useSheetVirtualized = (sheetRef: RefObject<HTMLDivElement>) => {
 
     const { totalHeight, totalWidth } = calculateTotalDimensions();
 
-    // Aseguramos un tamaño mínimo basado en el viewport
-    const minWidth = clientWidth;
-    const minHeight = clientHeight;
-
     setViewState((prev) => ({
       ...prev,
       viewportWidth: clientWidth,
       viewportHeight: clientHeight,
-      totalHeight: Math.max(totalHeight, minHeight),
-      totalWidth: Math.max(totalWidth, minWidth),
+      totalHeight: Math.max(totalHeight, clientHeight),
+      totalWidth: Math.max(totalWidth, clientWidth),
     }));
   }, [calculateTotalDimensions, sheetRef]);
 
@@ -166,7 +158,13 @@ export const useSheetVirtualized = (sheetRef: RefObject<HTMLDivElement>) => {
     }
 
     return rows;
-  }, [sheet, visibleRange]);
+  }, [
+    visibleRange.startRow,
+    visibleRange.endRow,
+    visibleRange.startCol,
+    visibleRange.endCol,
+    sheet,
+  ]);
 
   const debugInfo = useMemo<DebugInfoProps | null>(() => {
     if (!IS_DEV) return null;
@@ -209,3 +207,4 @@ export const useSheetVirtualized = (sheetRef: RefObject<HTMLDivElement>) => {
 };
 
 const SCROLL_THROTTLE = 16; // Aproximadamente 60fps
+const LAYOUT_EXTRA = 100;
