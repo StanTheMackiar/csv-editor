@@ -189,9 +189,6 @@ export const getCellFromId = (
   const coords = getCoordsById(cellId);
 
   if (!coords) {
-    console.error(
-      'Invalid cell ID format. Must be in the format "LetterNumber" (e.g., A1, BA12).'
-    );
     return;
   }
 

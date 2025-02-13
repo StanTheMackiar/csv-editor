@@ -38,10 +38,10 @@ export const computeCell = (
 
     const { parsedExp, cells } = parseExpression(computedValue, sheet);
 
-    const rangeWithoutFunctionPattern =
-      /^([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*")(,\s*([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*"))+$/;
+    const functionCallPattern =
+      /^[A-Z]+\(\s*([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*")(\s*,\s*([^",\r\n]+|\d+|""|"(?:[^"\\]|\\.)*"))*\s*\)$/i;
 
-    if (rangeWithoutFunctionPattern.test(parsedExp)) {
+    if (!functionCallPattern.test(parsedExp)) {
       throw new Error('', {
         cause: '#INVALID_RANGE',
       });
