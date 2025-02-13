@@ -1,3 +1,4 @@
+'use client';
 import { useModalState } from '@/hooks';
 import { useSaveExcel } from '@/hooks/export/useSaveExcel';
 import { useSaveJSON } from '@/hooks/export/useSaveJSON';
